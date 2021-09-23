@@ -1,0 +1,10 @@
+
+
+
+trait State {
+
+}
+
+trait Machine {
+    
+}
