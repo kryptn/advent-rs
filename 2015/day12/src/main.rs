@@ -1,8 +1,15 @@
-use std::{any, collections::{HashMap, HashSet, VecDeque}, convert::TryInto, hash::{Hash, Hasher}, ops::Index, str::FromStr};
+use std::{
+    any,
+    collections::{HashMap, HashSet, VecDeque},
+    convert::TryInto,
+    hash::{Hash, Hasher},
+    ops::Index,
+    str::FromStr,
+};
 
 use advent::fetch;
 use anyhow;
-use serde_json::{Map, Result, Value, json, map::Values};
+use serde_json::{json, map::Values, Map, Result, Value};
 
 fn deep_sum(value: Value) -> i64 {
     match value {
@@ -14,17 +21,25 @@ fn deep_sum(value: Value) -> i64 {
 }
 
 fn deep_sum_without_red(value: Value) -> i64 {
-
     match value {
         Value::Number(num) => num.as_i64().unwrap(),
-        Value::Array(items) => items.iter().map(|v| deep_sum_without_red(v.to_owned())).sum(),
+        Value::Array(items) => items
+            .iter()
+            .map(|v| deep_sum_without_red(v.to_owned()))
+            .sum(),
         Value::Object(items) => {
-            if items.iter().any(|(_k, v)| *v == Value::String(String::from("red"))) {
+            if items
+                .iter()
+                .any(|(_k, v)| *v == Value::String(String::from("red")))
+            {
                 0
             } else {
-                items.iter().map(|(_k, v)| deep_sum_without_red(v.to_owned())).sum()
+                items
+                    .iter()
+                    .map(|(_k, v)| deep_sum_without_red(v.to_owned()))
+                    .sum()
             }
-        },
+        }
         _ => 0,
     }
 }

@@ -19,13 +19,11 @@ struct Reindeer {
 }
 
 impl Reindeer {
-
     fn distance(&self, seconds: i32) -> i32 {
         let cycle_length = self.velocity_timespan + self.rest_timespan;
 
         let cycles = seconds / cycle_length;
         let remaining = seconds - (cycle_length * cycles);
-
 
         if remaining > self.velocity_timespan {
             // would be resting
@@ -33,7 +31,6 @@ impl Reindeer {
 
             let out = self.velocity * self.velocity_timespan * cycles;
             out
-
         } else {
             let out = self.velocity * self.velocity_timespan * cycles + self.velocity * remaining;
             out
@@ -59,12 +56,11 @@ fn parse_reindeer(line: &str) -> Reindeer {
 const SECONDS: i32 = 2503;
 //const SECONDS: i32 = 1000;
 
-
 fn main() {
     let input = fetch::get_input(2015, 14);
 
-//     let input = r#"Comet can fly 14 km/s for 10 seconds, but then must rest for 127 seconds.
-// Dancer can fly 16 km/s for 11 seconds, but then must rest for 162 seconds."#.trim();
+    //     let input = r#"Comet can fly 14 km/s for 10 seconds, but then must rest for 127 seconds.
+    // Dancer can fly 16 km/s for 11 seconds, but then must rest for 162 seconds."#.trim();
 
     let reindeer: Vec<Reindeer> = input.lines().map(|line| parse_reindeer(line)).collect();
 
@@ -75,7 +71,11 @@ fn main() {
     let mut fast_map: HashMap<String, i32> = HashMap::new();
 
     for i in 1..SECONDS {
-        let (fastest, _) = reindeer.iter().map(|r| r.distance_tuple(i)).reduce(|a, b| if a.1 > b.1 {a} else {b}).unwrap();
+        let (fastest, _) = reindeer
+            .iter()
+            .map(|r| r.distance_tuple(i))
+            .reduce(|a, b| if a.1 > b.1 { a } else { b })
+            .unwrap();
         if !fast_map.contains_key(&fastest) {
             fast_map.insert(fastest.clone(), 0);
         }
@@ -83,9 +83,6 @@ fn main() {
     }
 
     dbg!(fast_map);
-
-
-
 }
 
 #[cfg(test)]
@@ -100,7 +97,7 @@ mod test {
 
     #[test]
     fn test_parse() {
-        let expected =     Reindeer {
+        let expected = Reindeer {
             name: "Vixen".to_string(),
             velocity: 19,
             velocity_timespan: 7,
@@ -113,20 +110,19 @@ mod test {
 
     #[test]
     fn test_distance() {
-
-        let comet = parse_reindeer("Comet can fly 14 km/s for 10 seconds, but then must rest for 127 seconds.");
+        let comet = parse_reindeer(
+            "Comet can fly 14 km/s for 10 seconds, but then must rest for 127 seconds.",
+        );
         assert_eq!(comet.distance(1000), 1120);
 
-        let comet = parse_reindeer("Dancer can fly 16 km/s for 11 seconds, but then must rest for 162 seconds.");
+        let comet = parse_reindeer(
+            "Dancer can fly 16 km/s for 11 seconds, but then must rest for 162 seconds.",
+        );
         assert_eq!(comet.distance(1000), 1056);
     }
 
     #[test]
-    fn p1_tests() {
-
-
-
-    }
+    fn p1_tests() {}
 
     #[test]
     fn p2_tests() {}

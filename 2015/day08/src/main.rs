@@ -12,7 +12,7 @@ const letters: &str = "abcdefghijklmnopqrstuvwxyz0123456789";
 fn decode(input: &str) -> (i32, i32) {
     let sl = input.len();
 
-    let mut data: VecDeque<char> = input[1..sl-1].chars().into_iter().collect();
+    let mut data: VecDeque<char> = input[1..sl - 1].chars().into_iter().collect();
     let mut l = data.len();
 
     // dbg!(&input);
@@ -38,7 +38,6 @@ fn decode(input: &str) -> (i32, i32) {
             }
         }
         data.pop_front();
-
     }
 
     (sl.try_into().unwrap(), l.try_into().unwrap())
@@ -46,7 +45,6 @@ fn decode(input: &str) -> (i32, i32) {
 
 fn encode(input: &str) -> (i32, i32) {
     let sl = input.len();
-
 
     let mut data: VecDeque<char> = input.chars().into_iter().collect();
     let mut l = data.len() + 2;
@@ -61,11 +59,10 @@ fn encode(input: &str) -> (i32, i32) {
         match data[0] {
             '"' => l += 1,
             '\\' => l += 1,
-            _ => {},
+            _ => {}
         }
 
         data.pop_front();
-
     }
 
     (l.try_into().unwrap(), sl.try_into().unwrap())
@@ -74,14 +71,19 @@ fn encode(input: &str) -> (i32, i32) {
 fn main() {
     let input = fetch::get_input(2015, 8);
 
-
-
-    let r = input.lines().map(|line| decode(line)).reduce(|a, b| ((a.0 + b.0), (a.1 + b.1))).unwrap();
+    let r = input
+        .lines()
+        .map(|line| decode(line))
+        .reduce(|a, b| ((a.0 + b.0), (a.1 + b.1)))
+        .unwrap();
     println!("part 1 => {}", r.0 - r.1);
 
-    let r = input.lines().map(|line| encode(line)).reduce(|a, b| ((a.0 + b.0), (a.1 + b.1))).unwrap();
+    let r = input
+        .lines()
+        .map(|line| encode(line))
+        .reduce(|a, b| ((a.0 + b.0), (a.1 + b.1)))
+        .unwrap();
     println!("part 2 => {}", r.0 - r.1)
-
 }
 
 #[cfg(test)]

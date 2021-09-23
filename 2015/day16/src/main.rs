@@ -138,7 +138,10 @@ fn main() {
     let matches = aunts.iter().filter(|a| a.like(&expected)).collect_vec();
     dbg!(matches);
 
-    let matches = aunts.iter().filter(|a| a.actually_like(&expected)).collect_vec();
+    let matches = aunts
+        .iter()
+        .filter(|a| a.actually_like(&expected))
+        .collect_vec();
     dbg!(matches);
 }
 

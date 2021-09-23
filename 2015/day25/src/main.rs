@@ -1,4 +1,3 @@
-
 use std::slice::Iter;
 
 use advent::{fetch, grid::Coordinate, numbers::factors};
@@ -9,10 +8,8 @@ struct Paper {
 }
 
 impl Paper {
-    fn new () -> Self {
-        Self {
-            current: None,
-        }
+    fn new() -> Self {
+        Self { current: None }
     }
 }
 
@@ -30,9 +27,7 @@ impl Iterator for Paper {
                 x = 1;
                 y = current.x + 1;
             }
-            self.current = Some(Coordinate {
-                x, y
-            })
+            self.current = Some(Coordinate { x, y })
         }
 
         self.current
@@ -55,10 +50,7 @@ fn main() {
     }
 
     dbg!(last_coord, last_val);
-
 }
-
-
 
 #[cfg(test)]
 mod test {
@@ -82,8 +74,7 @@ mod test {
     }
 
     #[test]
-    fn p1_tests() {
-    }
+    fn p1_tests() {}
 
     #[test]
     fn p2_tests() {}

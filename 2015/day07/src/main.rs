@@ -1,4 +1,7 @@
-use std::{collections::{HashMap, VecDeque}, str::FromStr};
+use std::{
+    collections::{HashMap, VecDeque},
+    str::FromStr,
+};
 
 use advent::fetch;
 use anyhow;
@@ -103,21 +106,20 @@ impl Machine {
                 } else {
                     self.memory.get(&w).unwrap().to_owned()
                 }
-
-            },
+            }
         }
     }
 
     pub fn can_apply(&self, inst: &Instruction) -> bool {
         if let Value::Wire(w) = &inst.b {
             if !self.memory.contains_key(w) {
-                return false
+                return false;
             }
         };
 
         if let Some(Value::Wire(w)) = &inst.a {
             if !self.memory.contains_key(w) {
-                return false
+                return false;
             }
         };
 
@@ -125,22 +127,33 @@ impl Machine {
     }
 
     pub fn step(&mut self, inst: Instruction) {
-
         match inst.operator {
             Operator::And => {
-                self.memory.insert(inst.destination, self.value_of(inst.a.unwrap()) & self.value_of(inst.b));
+                self.memory.insert(
+                    inst.destination,
+                    self.value_of(inst.a.unwrap()) & self.value_of(inst.b),
+                );
             }
             Operator::Or => {
-                self.memory.insert(inst.destination, self.value_of(inst.a.unwrap()) | self.value_of(inst.b));
+                self.memory.insert(
+                    inst.destination,
+                    self.value_of(inst.a.unwrap()) | self.value_of(inst.b),
+                );
             }
             Operator::Not => {
                 self.memory.insert(inst.destination, !self.value_of(inst.b));
             }
             Operator::LeftShift => {
-                self.memory.insert(inst.destination, self.value_of(inst.a.unwrap()) << self.value_of(inst.b));
+                self.memory.insert(
+                    inst.destination,
+                    self.value_of(inst.a.unwrap()) << self.value_of(inst.b),
+                );
             }
             Operator::RightShift => {
-                self.memory.insert(inst.destination, self.value_of(inst.a.unwrap()) >> self.value_of(inst.b));
+                self.memory.insert(
+                    inst.destination,
+                    self.value_of(inst.a.unwrap()) >> self.value_of(inst.b),
+                );
             }
             Operator::Provide => {
                 self.memory.insert(inst.destination, self.value_of(inst.b));
@@ -162,17 +175,20 @@ fn main() {
 
     let mut machine = Machine::new();
 
-    let mut instructions: VecDeque<Instruction> = input.lines().map(|i| {
-        let trimmed = i.trim();
-        let mut i = Instruction::from_str(trimmed).unwrap();
+    let mut instructions: VecDeque<Instruction> = input
+        .lines()
+        .map(|i| {
+            let trimmed = i.trim();
+            let mut i = Instruction::from_str(trimmed).unwrap();
 
-        // part 2
-        if i.destination == String::from("b") {
-            i.b = Value::Signal(956);
-        }
-        
-        i
-    } ).collect();
+            // part 2
+            if i.destination == String::from("b") {
+                i.b = Value::Signal(956);
+            }
+
+            i
+        })
+        .collect();
 
     while instructions.len() > 0 {
         if machine.can_apply(&instructions[0]) {
@@ -182,11 +198,12 @@ fn main() {
         if instructions.len() > 1 {
             instructions.rotate_left(1);
         }
-
     }
 
-    println!("part 1 => {}", machine.memory.get(&String::from("a")).unwrap());
-
+    println!(
+        "part 1 => {}",
+        machine.memory.get(&String::from("a")).unwrap()
+    );
 }
 
 #[cfg(test)]
@@ -200,7 +217,5 @@ mod test {
     }
 
     #[test]
-    fn check_instruction() {
-
-    }
+    fn check_instruction() {}
 }

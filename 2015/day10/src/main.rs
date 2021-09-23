@@ -1,4 +1,9 @@
-use std::{collections::{HashMap, HashSet, VecDeque}, convert::TryInto, hash::{Hash, Hasher}, str::FromStr};
+use std::{
+    collections::{HashMap, HashSet, VecDeque},
+    convert::TryInto,
+    hash::{Hash, Hasher},
+    str::FromStr,
+};
 
 use advent::fetch;
 use anyhow;
@@ -19,7 +24,7 @@ fn look_and_say(sequence: String) -> String {
 
         if seen == chr {
             times += 1;
-            continue
+            continue;
         } else {
             out.push_str(times.to_string().as_str());
             out.push(seen);
@@ -35,20 +40,16 @@ fn look_and_say(sequence: String) -> String {
     out
 }
 
-
 fn main() {
     let mut input = fetch::get_input(2015, 10);
     //let mut input = String::from("1");
 
-
     for x in 1..=50 {
-
         input = look_and_say(input);
         println!("step {} -> {}", x, input.len());
     }
 
     println!("part 1 => {}", input.len());
-
 }
 
 #[cfg(test)]
@@ -68,14 +69,8 @@ mod test {
         assert_eq!(look_and_say(String::from("21")), String::from("1211"));
         assert_eq!(look_and_say(String::from("1211")), String::from("111221"));
         assert_eq!(look_and_say(String::from("111221")), String::from("312211"));
-
-
-
-
     }
 
     #[test]
-    fn p2_tests() {
-
-    }
+    fn p2_tests() {}
 }

@@ -88,7 +88,7 @@ fn part2(input: String) -> i32 {
         for coordinate in coordinates_within(instruction.selection.a, instruction.selection.b) {
             match instruction.action {
                 Action::On => *wall.get_mut(&coordinate).unwrap() += 1,
-                Action::Off => *wall.get_mut(&coordinate).unwrap() = max(0, wall[&coordinate]-1),
+                Action::Off => *wall.get_mut(&coordinate).unwrap() = max(0, wall[&coordinate] - 1),
                 Action::Toggle => *wall.get_mut(&coordinate).unwrap() += 2,
             }
         }

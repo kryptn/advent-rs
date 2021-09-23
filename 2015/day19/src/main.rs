@@ -38,7 +38,7 @@ impl<'a> Structure<'a> {
     }
 
     fn all(&self, c: char) -> bool {
-        self.prefix.chars().all(|ch| ch == c ) && self.original.chars().all(|ch| ch == c )
+        self.prefix.chars().all(|ch| ch == c) && self.original.chars().all(|ch| ch == c)
     }
 }
 
@@ -95,7 +95,6 @@ fn replace(s: Structure) -> Vec<String> {
 }
 
 fn reduce(s: Structure, target: &String) -> Option<i32> {
-
     //println!("next struture: \n\tprefix: {}\n\tsuffix: {}\n\n", &s.prefix, &s.original);
 
     if s.original == *target && s.prefix.len() == 0 {
@@ -103,24 +102,30 @@ fn reduce(s: Structure, target: &String) -> Option<i32> {
     } else if s.original.len() == 0 {
         return None;
     } else if s.all(target.chars().next().unwrap()) {
-        return None
+        return None;
     }
 
-    let branches: Vec<i32> = s.replacements.iter().map(|(original, expanded)| {
-        if s.original.starts_with(expanded) && (original != target || s.prefix.len() == 0) {
-            let mut next = s.prefix.clone();
-            next.push_str(original);
-            next.push_str(&s.original[expanded.len()..s.original.len()]);
-            Structure::new(&s.replacements, String::new(), next)
-        } else {
-            let mut next_prefix = s.prefix.clone();
-            next_prefix.push_str(&s.original[0..1]);
+    let branches: Vec<i32> = s
+        .replacements
+        .iter()
+        .map(|(original, expanded)| {
+            if s.original.starts_with(expanded) && (original != target || s.prefix.len() == 0) {
+                let mut next = s.prefix.clone();
+                next.push_str(original);
+                next.push_str(&s.original[expanded.len()..s.original.len()]);
+                Structure::new(&s.replacements, String::new(), next)
+            } else {
+                let mut next_prefix = s.prefix.clone();
+                next_prefix.push_str(&s.original[0..1]);
 
-            let next_original = &s.original[1..s.original.len()];
-            Structure::new(&s.replacements, next_prefix, next_original.to_string())
-        }
-    }).map(|next| reduce(next, target)).filter(|c| *c != None).map(|o| o.unwrap()).collect();
-
+                let next_original = &s.original[1..s.original.len()];
+                Structure::new(&s.replacements, next_prefix, next_original.to_string())
+            }
+        })
+        .map(|next| reduce(next, target))
+        .filter(|c| *c != None)
+        .map(|o| o.unwrap())
+        .collect();
 
     if branches.len() == 0 {
         return None;
@@ -132,13 +137,13 @@ fn reduce(s: Structure, target: &String) -> Option<i32> {
 fn main() {
     let input = fetch::get_input(2015, 19);
 
-//     let input = r#"H => HO
-// H => OH
-// O => HH
+    //     let input = r#"H => HO
+    // H => OH
+    // O => HH
 
-// HOH"#;
+    // HOH"#;
 
-     let input = r#"e => O
+    let input = r#"e => O
 e => H
 H => HO
 H => OH
@@ -163,11 +168,10 @@ HOHOHO"#;
 
     let s = Structure::new(&replacements, "".to_string(), starting.to_string());
 
-
     let all_replacements = replace(s);
 
     let mut repl_set = HashSet::new();
-    for repl in &all_replacements{
+    for repl in &all_replacements {
         repl_set.insert(repl);
     }
 
@@ -182,7 +186,6 @@ HOHOHO"#;
     let s = Structure::new(&r, "".to_string(), starting.to_string());
 
     println!("part 2 => {:?}", reduce(s, &String::from("e")));
-
 }
 
 #[cfg(test)]

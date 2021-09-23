@@ -35,7 +35,6 @@ fn parse_feels(line: &str) -> (String, String, i32) {
     (String::from(from), String::from(to), modifier)
 }
 
-
 fn build_modifier_map(input: String, add_self: bool) -> HashMap<String, HashMap<String, i32>> {
     let mut m = HashMap::new();
 
@@ -46,9 +45,6 @@ fn build_modifier_map(input: String, add_self: bool) -> HashMap<String, HashMap<
         }
         m.get_mut(&from).unwrap().insert(to, modifier);
     }
-
-
-
 
     if add_self {
         let me = String::from("You");
@@ -77,18 +73,19 @@ fn solve(input: String, add_self: bool) -> i32 {
     let guests = build_modifier_map(input, add_self);
 
     let names: Vec<String> = guests.keys().map(|k| k.to_owned()).collect_vec();
-    let happiness = names.iter().permutations(names.len()).map(|seating| happiness(&guests, seating)).max();
+    let happiness = names
+        .iter()
+        .permutations(names.len())
+        .map(|seating| happiness(&guests, seating))
+        .max();
     happiness.unwrap()
 }
-
 
 fn main() {
     let input = fetch::get_input(2015, 13);
 
     println!("part 1 => {}", solve(input.clone(), false));
     println!("part 2 => {}", solve(input, true));
-
-
 }
 
 #[cfg(test)]
@@ -111,7 +108,6 @@ mod test {
 
     #[test]
     fn p1_tests() {
-
         let input = r#"Alice would gain 54 happiness units by sitting next to Bob.
         Alice would lose 79 happiness units by sitting next to Carol.
         Alice would lose 2 happiness units by sitting next to David.
@@ -128,11 +124,13 @@ mod test {
 
         let names: Vec<String> = thing.keys().map(|k| k.to_owned()).collect_vec();
 
-        let min = names.iter().permutations(names.len()).map(|seating| happiness(&thing, seating)).max();
+        let min = names
+            .iter()
+            .permutations(names.len())
+            .map(|seating| happiness(&thing, seating))
+            .max();
 
         assert_eq!(min, Some(330));
-
-
     }
 
     #[test]
