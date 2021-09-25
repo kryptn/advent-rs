@@ -1,12 +1,7 @@
 use std::collections::HashSet;
 
 use advent::{grid, input_store};
-use nom::{
-    bytes::complete::tag,
-    character::complete::{digit1, one_of},
-    multi::separated_list0,
-    IResult,
-};
+use nom::{bytes::complete::tag, character::complete::digit1, multi::separated_list0, IResult};
 
 #[derive(Debug, Clone)]
 struct Direction {
@@ -14,13 +9,8 @@ struct Direction {
     steps: i32,
 }
 
-fn parse_cardinal(input: &str) -> IResult<&str, grid::RelativeDirection> {
-    let (input, dir) = one_of("UDLR")(input)?;
-    Ok((input, dir.into()))
-}
-
 fn parse_direction(input: &str) -> IResult<&str, Direction> {
-    let (input, dir) = parse_cardinal(input)?;
+    let (input, dir) = grid::parse_cardinal(input)?;
     let (input, steps) = digit1(input)?;
     let steps: i32 = steps.parse().unwrap();
 
@@ -36,7 +26,6 @@ fn main() {
     //let input = "R2, L3";
     //let input = "R8, R4, R4, R8";
     let (_, directions) = parse_directions(&input).unwrap();
-    dbg!(&directions);
 
     let mut position = grid::Coordinate::new(0, 0);
     let mut heading = grid::Coordinate::new(0, 1);
@@ -77,7 +66,6 @@ fn main() {
         position = position + heading.scale(dir.steps);
 
         if visited.contains(&position) {
-            println!("visited {:?} before", position);
             break;
         }
         visited.insert(position);

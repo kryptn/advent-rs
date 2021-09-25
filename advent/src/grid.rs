@@ -75,6 +75,14 @@ impl From<char> for RelativeDirection {
     }
 }
 
+
+#[cfg(feature = "parse")]
+pub fn parse_cardinal(input: &str) -> nom::IResult<&str, RelativeDirection> {
+    let (input, dir) = nom::character::complete::one_of("UDLR")(input)?;
+    Ok((input, dir.into()))
+}
+
+
 impl Coordinate {
     pub fn new(x: i32, y: i32) -> Self {
         Self { x, y }
