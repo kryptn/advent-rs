@@ -6,11 +6,6 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::{env, fs};
 
-use reqwest;
-use reqwest::blocking::Client;
-use reqwest::header::{HeaderMap, HeaderValue};
-//use scraper::{Html, Selector};
-
 use anyhow::Result;
 
 const AOC_CONFIG_DIR_KEY: &str = "AOC_CONFIG";
@@ -84,6 +79,11 @@ pub fn read_puzzle_input(selector: Selector) -> Result<String> {
     let mut value = String::new();
     buf_reader.read_to_string(&mut value)?;
     Ok(value)
+}
+
+pub fn get_input(year: u16, day: u16) -> String {
+    let selector = Selector { year, day };
+    read_puzzle_input(selector).unwrap()
 }
 
 pub fn set_cookie(_value: String) -> Result<()> {
