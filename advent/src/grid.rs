@@ -75,13 +75,17 @@ impl From<char> for RelativeDirection {
     }
 }
 
-
 #[cfg(feature = "parse")]
-pub fn parse_cardinal(input: &str) -> nom::IResult<&str, RelativeDirection> {
-    let (input, dir) = nom::character::complete::one_of("UDLR")(input)?;
+pub fn parse_cardinal(input: &str) -> nom::IResult<&str, CardinalDirection> {
+    let (input, dir) = nom::character::complete::one_of("NSEW")(input)?;
     Ok((input, dir.into()))
 }
 
+#[cfg(feature = "parse")]
+pub fn parse_relative(input: &str) -> nom::IResult<&str, RelativeDirection> {
+    let (input, dir) = nom::character::complete::one_of("UDLR")(input)?;
+    Ok((input, dir.into()))
+}
 
 impl Coordinate {
     pub fn new(x: i32, y: i32) -> Self {
@@ -148,6 +152,17 @@ impl Sum<Coordinate> for Coordinate {
 impl<'a> Sum<&'a Coordinate> for Coordinate {
     fn sum<I: Iterator<Item = &'a Coordinate>>(iter: I) -> Self {
         iter.fold(Self::new(0, 0), |a, b| a + *b)
+    }
+}
+
+impl From<RelativeDirection> for Coordinate {
+    fn from(d: RelativeDirection) -> Self {
+        match d {
+            RelativeDirection::Up => Self::new(0, 1),
+            RelativeDirection::Right => Self::new(1, 0),
+            RelativeDirection::Down => Self::new(0, -1),
+            RelativeDirection::Left => Self::new(-1, 0),
+        }
     }
 }
 

@@ -4,6 +4,9 @@
 #[cfg(feature = "fetch")]
 pub mod fetch;
 
+#[cfg(feature = "parse")]
+pub mod parsers;
+
 pub mod grid;
 pub mod input_store;
 pub mod numbers;
