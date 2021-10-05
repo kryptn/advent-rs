@@ -1,4 +1,10 @@
-use std::{collections::HashMap, iter::Sum, ops::Add, str::FromStr};
+use std::{
+    collections::HashMap,
+    iter::Sum,
+    ops::{Add, Range},
+    slice::Iter,
+    str::FromStr,
+};
 
 #[derive(Hash, Eq, PartialEq, Copy, Clone, Debug)]
 pub struct Coordinate {
@@ -132,6 +138,23 @@ impl From<CardinalDirection> for Coordinate {
     }
 }
 
+impl From<RelativeDirection> for Coordinate {
+    fn from(d: RelativeDirection) -> Self {
+        match d {
+            RelativeDirection::Up => Self::new(0, 1),
+            RelativeDirection::Right => Self::new(1, 0),
+            RelativeDirection::Down => Self::new(0, -1),
+            RelativeDirection::Left => Self::new(-1, 0),
+        }
+    }
+}
+
+impl From<(i32, i32)> for Coordinate {
+    fn from(t: (i32, i32)) -> Self {
+        Self::new(t.0, t.1)
+    }
+}
+
 impl Add<Coordinate> for Coordinate {
     type Output = Coordinate;
 
@@ -152,17 +175,6 @@ impl Sum<Coordinate> for Coordinate {
 impl<'a> Sum<&'a Coordinate> for Coordinate {
     fn sum<I: Iterator<Item = &'a Coordinate>>(iter: I) -> Self {
         iter.fold(Self::new(0, 0), |a, b| a + *b)
-    }
-}
-
-impl From<RelativeDirection> for Coordinate {
-    fn from(d: RelativeDirection) -> Self {
-        match d {
-            RelativeDirection::Up => Self::new(0, 1),
-            RelativeDirection::Right => Self::new(1, 0),
-            RelativeDirection::Down => Self::new(0, -1),
-            RelativeDirection::Left => Self::new(-1, 0),
-        }
     }
 }
 
@@ -234,6 +246,24 @@ pub fn coordinates_within(a: Coordinate, b: Coordinate) -> Vec<Coordinate> {
     coords
 }
 
+pub fn iter_rows(a: Coordinate, b: Coordinate) -> Vec<Vec<Coordinate>> {
+    let (y_left, y_right) = sorted(a.y, b.y);
+    let (x_left, x_right) = sorted(a.x, b.x);
+
+    let mut lines = Vec::new();
+
+    for y in y_left..=y_right {
+        let mut row = Vec::new();
+        for x in x_left..=x_right {
+            row.push(Coordinate::new(x, y))
+        }
+
+        lines.push(row);
+    }
+
+    lines
+}
+
 pub fn manhattan(a: Coordinate, b: Coordinate) -> i32 {
     (b.x - a.x).abs() + (b.y - a.y).abs()
 }
@@ -270,6 +300,33 @@ pub fn bounding_box<T>(grid: &Grid<T>) -> (Coordinate, Coordinate) {
     }
 
     (lower, upper)
+}
+
+pub struct NewGrid<T> {
+    grid: HashMap<Coordinate, T>,
+}
+
+impl<T> NewGrid<T> {
+    pub fn new() -> Self {
+        let grid = HashMap::new();
+        Self { grid }
+    }
+
+    pub fn new_with_size(x: i32, y: i32) -> Self
+    where
+        T: Default,
+    {
+        let mut grid = HashMap::new();
+        for coordinate in coordinates_within(Coordinate::new(0, 0), Coordinate::new(x, y)) {
+            grid.insert(coordinate, T::default());
+        }
+
+        Self { grid }
+    }
+
+    pub fn insert(&mut self, key: Coordinate, value: T) -> Option<T> {
+        self.grid.insert(key, value)
+    }
 }
 
 #[cfg(test)]
