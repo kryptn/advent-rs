@@ -23,32 +23,30 @@ fn parse_marker(input: &str) -> IResult<&str, (usize, usize)> {
     sequence::delimited(ch::char('('), parse_xy, ch::char(')'))(input)
 }
 
-fn expand_marker(input: &str) -> IResult<&str, String> {
+fn expand_marker(input: &str) -> IResult<&str, usize> {
     let (input, (characters, times)) = parse_marker(input)?;
 
     let (input, text) = take(characters)(input)?;
 
-    let mut out = String::new();
-    for _ in 0..times {
-        out.push_str(text.clone());
-    }
+    let out: usize = text
+        .chars()
+        .fold(0, |a, c| if c == ' ' { a } else { a + 1 });
+    Ok((input, out * times))
+}
 
+fn boring(input: &str) -> IResult<&str, usize> {
+    let (input, text) = ch::alpha1(input)?;
+    let out: usize = text
+        .chars()
+        .fold(0, |a, c| if c == ' ' { a } else { a + 1 });
     Ok((input, out))
 }
 
-fn boring(input: &str) -> IResult<&str, String> {
-    let (input, out) = ch::alpha1(input)?;
-    Ok((input, out.into()))
-}
-
-fn decompress(input: &str) -> IResult<&str, String> {
+fn decompress(input: &str) -> IResult<&str, usize> {
     fold_many1(
         alt((boring, expand_marker)),
-        String::new,
-        |mut acc: String, item| {
-            acc.push_str(&item);
-            acc
-        },
+        || 0,
+        |acc: usize, item| acc + item,
     )(input)
 }
 
@@ -57,9 +55,7 @@ fn main() {
 
     let (_, expanded) = decompress(&input).unwrap();
 
-    let total = expanded
-        .chars()
-        .fold(0, |a, c| if c == ' ' { a } else { a + 1 });
+    let total = expanded;
 
     println!("part 1 => {}", total);
 }
