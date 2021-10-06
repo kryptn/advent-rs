@@ -8,7 +8,7 @@ use anyhow::Result;
 use rpassword::prompt_password_stdout;
 
 fn main() -> Result<()> {
-    let matches = clap_app!(myapp =>
+    let matches = clap_app!(advent =>
         (version: "1.0")
         (author: "David Bibb <kryptn@gmail.com>")
         (about: "Fetches Advent of Code inputs")
@@ -34,7 +34,7 @@ fn main() -> Result<()> {
             (@arg level: "what level")
             (@arg answer: "what level")
         )
-        (@subcommand set_cookie =>
+        (@subcommand cookie =>
             (about: "set the advent cookie")
             (@arg force: -f "overwrite existing cookie")
         )
@@ -82,8 +82,8 @@ fn main() -> Result<()> {
             let v = fetch::submit_answer(selector, level, answer.to_string())?;
             dbg!(v);
         }
-        ("set_cookie", Some(sub_m)) => {
-            let cookie = prompt_password_stdout("advent of code cookie header (session=....) > ")?;
+        ("cookie", Some(sub_m)) => {
+            let cookie = prompt_password_stdout("advent of code cookie header (session=....): ")?;
             let force: bool = sub_m.is_present("force");
 
             set_cookie(cookie, force)?;

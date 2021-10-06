@@ -1,4 +1,4 @@
-use advent::{input_store};
+use advent::input_store;
 
 fn main() {
     let input = input_store::get_input(YEAR, DAY);
