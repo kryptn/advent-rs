@@ -25,12 +25,20 @@ fn parse_marker(input: &str) -> IResult<&str, (usize, usize)> {
 
 fn expand_marker(input: &str) -> IResult<&str, usize> {
     let (input, (characters, times)) = parse_marker(input)?;
-
     let (input, text) = take(characters)(input)?;
 
     let out: usize = text
         .chars()
         .fold(0, |a, c| if c == ' ' { a } else { a + 1 });
+    Ok((input, out * times))
+}
+
+fn rec_expand_marker(input: &str) -> IResult<&str, usize> {
+    let (input, (characters, times)) = parse_marker(input)?;
+    let (input, text) = take(characters)(input)?;
+
+    let (_, out) = decompress_v2(text)?;
+
     Ok((input, out * times))
 }
 
@@ -40,6 +48,14 @@ fn boring(input: &str) -> IResult<&str, usize> {
         .chars()
         .fold(0, |a, c| if c == ' ' { a } else { a + 1 });
     Ok((input, out))
+}
+
+fn decompress_v2(input: &str) -> IResult<&str, usize> {
+    fold_many1(
+        alt((boring, rec_expand_marker)),
+        || 0,
+        |acc: usize, item| acc + item,
+    )(input)
 }
 
 fn decompress(input: &str) -> IResult<&str, usize> {
@@ -54,10 +70,12 @@ fn main() {
     let input = input_store::get_input(2016, 9);
 
     let (_, expanded) = decompress(&input).unwrap();
-
     let total = expanded;
-
     println!("part 1 => {}", total);
+
+    let (_, expanded) = decompress_v2(&input).unwrap();
+    let total = expanded;
+    println!("part 2 => {}", total);
 }
 
 #[cfg(test)]
@@ -77,14 +95,19 @@ mod test {
     #[case("A(2x2)BCD(2x2)EFG", "ABCBCDEFEFG")]
     #[case("(6x1)(1x3)A", "(1x3)A")]
     #[case("X(8x2)(3x3)ABCY", "X(3x3)ABC(3x3)ABCY")]
-    fn parse_test(#[case] given: &str, #[case] expected: String) {
+    fn p1_tests(#[case] given: &str, #[case] expected: String) {
         let (_, expanded) = decompress(given).unwrap();
-        assert_eq!(expanded, expected);
+        assert_eq!(expanded, expected.len());
     }
 
-    #[test]
-    fn p1_tests() {}
-
-    #[test]
-    fn p2_tests() {}
+    #[rstest]
+    #[case("(3x3)XYZ", "XYZXYZXYZ".len())]
+    #[case("X(8x2)(3x3)ABCY", "XABCABCABCABCABCABCY".len())]
+    #[case("(27x12)(20x12)(13x14)(7x10)(1x12)A", 241920)]
+    #[case("(25x3)(3x3)ABC(2x3)XY(5x2)PQRSTX(18x9)(3x2)TWO(5x7)SEVEN", 445)]
+    #[trace]
+    fn p2_tests(#[case] given: &str, #[case] expected: usize) {
+        let (_, expanded) = decompress_v2(given).unwrap();
+        assert_eq!(expanded, expected)
+    }
 }
