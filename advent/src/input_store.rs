@@ -1,12 +1,11 @@
 use std::collections::HashMap;
-use std::error::Error;
 use std::fs::{DirBuilder, File};
 use std::io::{BufReader, Read, Write};
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::{env, fs};
 
-use anyhow::Result;
+use anyhow::{Error, Result};
 
 const AOC_CONFIG_DIR_KEY: &str = "AOC_CONFIG";
 
@@ -86,7 +85,20 @@ pub fn get_input(year: u16, day: u16) -> String {
     read_puzzle_input(selector).unwrap()
 }
 
-pub fn set_cookie(_value: String) -> Result<()> {
+pub fn set_cookie(cookie: String, force: bool) -> Result<()> {
+    let cookie_path = cookie_file_path();
+
+    if !force && cookie_path.exists() {
+        return Err(Error::msg(
+            "Cookie file already exists, use -f to overwrite",
+        ));
+    }
+
+    DirBuilder::new().recursive(true).create(aoc_config_dir())?;
+
+    let mut file = File::create(cookie_file_path())?;
+    file.write_all(cookie.as_bytes())?;
+
     Ok(())
 }
 

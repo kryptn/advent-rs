@@ -5,6 +5,7 @@ use advent::{
 use clap::clap_app;
 
 use anyhow::Result;
+use rpassword::prompt_password_stdout;
 
 fn main() -> Result<()> {
     let matches = clap_app!(myapp =>
@@ -35,7 +36,7 @@ fn main() -> Result<()> {
         )
         (@subcommand set_cookie =>
             (about: "set the advent cookie")
-
+            (@arg force: -f "overwrite existing cookie")
         )
     )
     .get_matches();
@@ -81,8 +82,11 @@ fn main() -> Result<()> {
             let v = fetch::submit_answer(selector, level, answer.to_string())?;
             dbg!(v);
         }
-        ("set_cookie", Some(_)) => {
-            set_cookie("".to_string())?;
+        ("set_cookie", Some(sub_m)) => {
+            let cookie = prompt_password_stdout("advent of code cookie header (session=....) > ")?;
+            let force: bool = sub_m.is_present("force");
+
+            set_cookie(cookie, force)?;
         }
         (_, _) => {}
     };

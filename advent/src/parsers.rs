@@ -40,12 +40,10 @@ pub fn parse_usize(input: &str) -> IResult<&str, usize> {
     Ok((input, num.parse().unwrap()))
 }
 
-
 #[cfg(test)]
 mod test {
     use super::*;
     use rstest::*;
-
 
     #[rstest]
     #[case("0", 0)]
