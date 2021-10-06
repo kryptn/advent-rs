@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use advent::{
     input_store,
     parsers::{parse_usize, ws},
@@ -73,8 +75,78 @@ fn parse_instruction(input: &str) -> IResult<&str, Instruction> {
     alt((parse_cmp_inst, parse_give_inst))(input)
 }
 
+fn append<T>(m: &mut HashMap<usize, Vec<T>>, key: usize, value: T) {
+    if !m.contains_key(&key) {
+        let v = vec![value];
+        m.insert(key, v);
+    } else {
+        m.get_mut(&key).unwrap().push(value);
+    }
+}
+
+fn solve(input: &str, look_for: (usize, usize)) -> (usize, usize) {
+    let mut instructions: Vec<Instruction> = input.lines().map(|line| line.into()).collect();
+    let mut bots: HashMap<usize, Vec<usize>> = HashMap::new();
+    let mut outputs: HashMap<usize, Vec<usize>> = HashMap::new();
+
+    let mut compares: HashMap<(usize, usize), usize> = HashMap::new();
+
+    while !instructions.is_empty() {
+        for i in 0..instructions.len() {
+            let inst = instructions[i].clone();
+
+            match inst {
+                Instruction::Give(gv) => {
+                    instructions.remove(i);
+                    match gv.to {
+                        Destination::Output(out) => append(&mut outputs, out, gv.value),
+                        Destination::Bot(bot) => append(&mut bots, bot, gv.value),
+                    }
+                    break;
+                }
+                Instruction::Compare(cmp) => {
+                    if let Some(chips) = bots.get(&cmp.bot) {
+                        if chips.len() == 2 {
+                            let a = chips[0];
+                            let b = chips[1];
+
+                            let (low, high) = if a > b { (b, a) } else { (a, b) };
+
+                            compares.insert((low, high), cmp.bot);
+
+                            match cmp.low {
+                                Destination::Output(out) => append(&mut outputs, out, low),
+                                Destination::Bot(bot) => append(&mut bots, bot, low),
+                            }
+
+                            match cmp.high {
+                                Destination::Output(out) => append(&mut outputs, out, high),
+                                Destination::Bot(bot) => append(&mut bots, bot, high),
+                            }
+
+                            instructions.remove(i);
+                            break;
+                        } else {
+                            continue;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    let cmpd = compares.get(&look_for).unwrap().to_owned();
+    let muld = outputs[&0][0] * outputs[&1][0] * outputs[&2][0];
+
+    (cmpd, muld)
+}
+
 fn main() {
     let input = input_store::get_input(2016, 10);
+    let (p1, p2) = solve(&input, (17, 61));
+
+    println!("part 1 => {:?}", p1);
+    println!("part 2 => {:?}", p2);
 }
 
 #[cfg(test)]

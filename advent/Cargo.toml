@@ -28,3 +28,6 @@ nom = { version = "7.0.0", optional = true}
 fetch = ["reqwest", "url"]
 cli = ["clap"]
 parse = ["nom"]
+
+[dev-dependencies]
+rstest = "0.11.0"
