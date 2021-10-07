@@ -1,4 +1,4 @@
-use std::{collections::HashMap, str::FromStr};
+use std::collections::HashMap;
 
 use advent::{
     input_store, machine,
@@ -6,11 +6,7 @@ use advent::{
     parsers::{parse_isize, ws},
 };
 use nom::{
-    branch::alt,
-    bytes::complete::tag,
-    character::complete::{alpha1, one_of},
-    sequence::tuple,
-    IResult,
+    branch::alt, bytes::complete::tag, character::complete::one_of, sequence::tuple, IResult,
 };
 
 #[derive(Copy, Clone, Hash, Eq, PartialEq, Debug)]
