@@ -9,4 +9,5 @@ pub mod parsers;
 
 pub mod grid;
 pub mod input_store;
+pub mod machine;
 pub mod numbers;
