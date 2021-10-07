@@ -1,6 +1,17 @@
 use std::{collections::HashMap, str::FromStr};
 
-use advent::{input_store, machine};
+use advent::{
+    input_store, machine,
+    machine::Apply,
+    parsers::{parse_isize, ws},
+};
+use nom::{
+    branch::alt,
+    bytes::complete::tag,
+    character::complete::{alpha1, one_of},
+    sequence::tuple,
+    IResult,
+};
 
 #[derive(Copy, Clone, Hash, Eq, PartialEq, Debug)]
 enum Register {
@@ -8,6 +19,18 @@ enum Register {
     B,
     C,
     D,
+}
+
+impl From<char> for Register {
+    fn from(r: char) -> Self {
+        match r {
+            'a' => Register::A,
+            'b' => Register::B,
+            'c' => Register::C,
+            'd' => Register::D,
+            _ => unreachable!(),
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -22,6 +45,13 @@ enum Instruction {
     Increment(Register),
     Decrement(Register),
     JumpNotZero(Value, Value),
+}
+
+impl From<&str> for Instruction {
+    fn from(input: &str) -> Self {
+        let (_, inst) = parse_inst(input).unwrap();
+        inst
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -58,6 +88,12 @@ impl State {
         let mut memory = self.memory.clone();
         memory.insert(register, value);
         memory
+    }
+
+    fn step(self) -> Option<Self> {
+        let inst = self.instructions.get(self.ptr)?;
+        let next_state = self.apply(inst.to_owned());
+        Some(next_state)
     }
 }
 
@@ -104,8 +140,94 @@ impl machine::Apply<Instruction> for State {
     }
 }
 
+fn parse_value(input: &str) -> IResult<&str, Value> {
+    let (input, v) = ws(parse_isize)(input)?;
+    Ok((input, Value::Value(v)))
+}
+
+fn parse_register(input: &str) -> IResult<&str, Value> {
+    let (input, r) = ws(one_of("abcd"))(input)?;
+    Ok((input, Value::Register(r.into())))
+}
+
+fn parse_operand(input: &str) -> IResult<&str, Value> {
+    alt((parse_register, parse_value))(input)
+}
+
+fn parse_cpy(input: &str) -> IResult<&str, Instruction> {
+    let (input, (_, x, y)) = tuple((ws(tag("cpy")), parse_operand, parse_register))(input)?;
+    if let Value::Register(y) = y {
+        Ok((input, Instruction::Copy(x, y)))
+    } else {
+        unreachable!()
+    }
+}
+
+fn parse_inc(input: &str) -> IResult<&str, Instruction> {
+    let (input, (_, r)) = tuple((ws(tag("inc")), parse_register))(input)?;
+
+    if let Value::Register(r) = r {
+        Ok((input, Instruction::Increment(r)))
+    } else {
+        unreachable!()
+    }
+}
+
+fn parse_dec(input: &str) -> IResult<&str, Instruction> {
+    let (input, (_, r)) = tuple((ws(tag("dec")), parse_register))(input)?;
+
+    if let Value::Register(r) = r {
+        Ok((input, Instruction::Decrement(r)))
+    } else {
+        unreachable!()
+    }
+}
+
+fn parse_jnz(input: &str) -> IResult<&str, Instruction> {
+    let (input, (_, test, offset)) = tuple((ws(tag("jnz")), parse_operand, parse_operand))(input)?;
+    Ok((input, Instruction::JumpNotZero(test, offset)))
+}
+
+fn parse_inst(input: &str) -> IResult<&str, Instruction> {
+    alt((parse_cpy, parse_inc, parse_dec, parse_jnz))(input)
+}
+
 fn main() {
     let input = input_store::get_input(2016, 12);
+    // let input = r#"cpy 41 a
+    // inc a
+    // inc a
+    // dec a
+    // jnz a 2
+    // dec a"#;
+    let instructions: Vec<Instruction> = input.lines().map(|l| l.into()).collect();
+    let first_state: State = instructions.into();
+
+    let mut state: Option<State> = Some(first_state.clone());
+    loop {
+        let next_state = state.clone().unwrap().step();
+        //dbg!(state.clone().unwrap().memory.clone());
+        state = match next_state {
+            Some(s) => Some(s),
+            None => break,
+        }
+    }
+    println!("part 1 => {}", state.unwrap().memory[&Register::A]);
+
+    let mut state = Some(State {
+        memory: first_state.memory_with(Register::C, 1),
+        ..first_state
+    });
+    loop {
+        let next_state = state.clone().unwrap().step();
+        //dbg!(state.clone().unwrap().memory.clone());
+        state = match next_state {
+            Some(s) => Some(s),
+            None => break,
+        }
+    }
+
+    println!("part 2 => {}", state.unwrap().memory[&Register::A]);
 }
 
 #[cfg(test)]
