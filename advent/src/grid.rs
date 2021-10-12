@@ -4,13 +4,23 @@ use std::{
     ops::{Add, Range},
     slice::Iter,
     str::FromStr,
+    sync::{Arc, Mutex, MutexGuard, RwLock},
 };
+
+use itertools::Itertools;
 
 #[derive(Hash, Eq, PartialEq, Copy, Clone, Debug)]
 pub struct Coordinate {
     pub x: i32,
     pub y: i32,
 }
+
+impl std::fmt::Display for Coordinate {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({}, {})", self.x, self.y)
+    }
+}
+
 #[derive(Hash, Eq, PartialEq, Copy, Clone, Debug)]
 
 pub enum CardinalDirection {
@@ -96,6 +106,10 @@ pub fn parse_relative(input: &str) -> nom::IResult<&str, RelativeDirection> {
 impl Coordinate {
     pub fn new(x: i32, y: i32) -> Self {
         Self { x, y }
+    }
+
+    pub fn zero() -> Self {
+        Self { x: 0, y: 0 }
     }
 
     pub fn neighbors(&self) -> Vec<Self> {
@@ -213,6 +227,18 @@ impl Coordinate {
             y: self.y * by,
         }
     }
+
+    pub fn cardinals(self) -> Vec<Self> {
+        vec![self.up(), self.right(), self.down(), self.left()]
+    }
+
+    pub fn weighted_cardinals(self, measure: impl Fn(&Coordinate) -> i32) -> Vec<Self> {
+        self.cardinals()
+            .iter()
+            .sorted_by(|&l, &r| measure(l).cmp(&measure(r)))
+            .cloned()
+            .collect()
+    }
 }
 
 pub fn coordinate_str(given: &str, sep: &str) -> Coordinate {
@@ -302,31 +328,103 @@ pub fn bounding_box<T>(grid: &Grid<T>) -> (Coordinate, Coordinate) {
     (lower, upper)
 }
 
-pub struct NewGrid<T> {
-    grid: HashMap<Coordinate, T>,
+pub fn print_grid<T: std::fmt::Display>(g: &Grid<T>) {
+    let (lower, upper) = bounding_box(&g);
+
+    for row in iter_rows(lower, upper) {
+        for coord in row {
+            let item = g.get(&coord).unwrap();
+            print!("{}", item);
+        }
+        print!("\n");
+    }
+    println!("");
 }
 
-impl<T> NewGrid<T> {
-    pub fn new() -> Self {
-        let grid = HashMap::new();
-        Self { grid }
+pub trait Passable {
+    fn is_passable(&self) -> bool;
+}
+
+#[derive(Clone, Debug)]
+pub enum Traversal {
+    Found(Vec<Coordinate>),
+    NoPath,
+}
+
+fn inner_traverse_astar<T: Passable>(
+    grid: &Grid<T>,
+    position: Coordinate,
+    goal: Coordinate,
+    //visited: Arc<RwLock<Vec<Coordinate>>>,
+    visited: Box<Vec<Coordinate>>,
+) -> Traversal {
+    //println!("visited len -> {}", .len());
+
+    if position == goal {
+        return Traversal::Found(vec![position]);
     }
 
-    pub fn new_with_size(x: i32, y: i32) -> Self
-    where
-        T: Default,
-    {
-        let mut grid = HashMap::new();
-        for coordinate in coordinates_within(Coordinate::new(0, 0), Coordinate::new(x, y)) {
-            grid.insert(coordinate, T::default());
-        }
+    let sorted_cardinals = position.weighted_cardinals(|c| {
+        let tc = c.clone();
+        manhattan(tc, goal)
+    });
 
-        Self { grid }
-    }
+    let valid_coordinates = sorted_cardinals
+        .iter()
+        .filter(|&c| {
+            if let Some(item) = grid.get(c) {
+                item.is_passable()
+            } else {
+                false
+            }
+        })
+        .filter(|&c| !visited.contains(c));
 
-    pub fn insert(&mut self, key: Coordinate, value: T) -> Option<T> {
-        self.grid.insert(key, value)
+    let results: Vec<Vec<Coordinate>> = valid_coordinates
+        .cloned()
+        .map(|c| {
+            let visited = {
+                let mut vis = visited.clone();
+                //println!("visited list is {} many", vis.len());
+                vis.push(c);
+                vis
+            };
+
+            match inner_traverse_astar(grid, c, goal, visited) {
+                Traversal::Found(mut v) => {
+                    v.insert(0, position);
+                    Traversal::Found(v)
+                }
+                Traversal::NoPath => Traversal::NoPath,
+            }
+        })
+        .filter(|r| matches![r, Traversal::Found(_)])
+        .map(|p| match p {
+            Traversal::Found(v) => v,
+            Traversal::NoPath => unreachable!(),
+        })
+        .sorted_by(|l, r| l.len().cmp(&r.len()))
+        .collect();
+
+    let c: Vec<usize> = results.iter().map(|i| i.len()).collect();
+    //println!("results len => {}, {:?}", &results.len(), c);
+
+    if results.len() > 0 {
+        let first = results.first().unwrap().to_owned();
+        return Traversal::Found(first);
     }
+    Traversal::NoPath
+}
+
+pub fn traverse_astar<T: Passable>(
+    grid: &Grid<T>,
+    start: Coordinate,
+    goal: Coordinate,
+) -> Traversal {
+    //let visited = Arc::new(RwLock::new(vec![]));
+    let visited = Box::new(vec![]);
+
+    inner_traverse_astar(grid, start, goal, visited)
 }
 
 #[cfg(test)]
@@ -386,5 +484,48 @@ mod test {
     fn test_with_sep() {
         let it = coordinate_str("1,2", ",");
         assert_eq!(it, Coordinate::new(1, 2));
+    }
+
+    #[test]
+    fn test_weighted_coordinate() {
+        let anchor = Coordinate::zero();
+        let dirs = Coordinate::new(12, -5).weighted_cardinals(|c| manhattan(anchor, c.clone()));
+
+        println!("{:?}", dirs);
+    }
+
+    mod test_grid {
+
+        use crate::grid::*;
+
+        pub struct Cell {
+            coordinate: Coordinate,
+        }
+
+        impl Passable for Cell {
+            fn is_passable(&self) -> bool {
+                0 <= self.coordinate.y && self.coordinate.y < 5
+            }
+        }
+
+        pub fn new_grid(x: i32, y: i32) -> Grid<Cell> {
+            let mut grid = Grid::new();
+            for coordinate in coordinates_within(Coordinate::zero(), Coordinate::new(x, y)) {
+                grid.insert(coordinate, Cell { coordinate });
+            }
+
+            grid
+        }
+    }
+
+    #[test]
+    fn test_astar() {
+        let grid = test_grid::new_grid(10, 10);
+
+        let start = Coordinate::new(2, 4);
+        let goal = Coordinate::new(8, 2);
+
+        let p = traverse_astar(&grid, start, goal);
+        dbg!(p);
     }
 }
