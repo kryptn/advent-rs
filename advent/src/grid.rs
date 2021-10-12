@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     iter::Sum,
     ops::{Add, Range},
     slice::Iter,
@@ -348,20 +348,19 @@ pub trait Passable {
 #[derive(Clone, Debug)]
 pub enum Traversal {
     Found(Vec<Coordinate>),
-    NoPath,
+    NoPath(Vec<Coordinate>),
 }
 
 fn inner_traverse_astar<T: Passable>(
     grid: &Grid<T>,
     position: Coordinate,
     goal: Coordinate,
-    //visited: Arc<RwLock<Vec<Coordinate>>>,
-    visited: Box<Vec<Coordinate>>,
-) -> Traversal {
-    //println!("visited len -> {}", .len());
-
+    visited: Vec<Coordinate>,
+) -> Vec<Traversal> {
     if position == goal {
-        return Traversal::Found(vec![position]);
+        let mut visited = visited;
+        visited.push(position);
+        return vec![Traversal::Found(visited)];
     }
 
     let sorted_cardinals = position.weighted_cardinals(|c| {
@@ -380,51 +379,54 @@ fn inner_traverse_astar<T: Passable>(
         })
         .filter(|&c| !visited.contains(c));
 
-    let results: Vec<Vec<Coordinate>> = valid_coordinates
+    let results: Vec<Traversal> = valid_coordinates
         .cloned()
         .map(|c| {
-            let visited = {
-                let mut vis = visited.clone();
-                //println!("visited list is {} many", vis.len());
-                vis.push(c);
-                vis
-            };
+            let mut visited = visited.clone();
+            visited.push(c);
 
-            match inner_traverse_astar(grid, c, goal, visited) {
-                Traversal::Found(mut v) => {
-                    v.insert(0, position);
-                    Traversal::Found(v)
-                }
-                Traversal::NoPath => Traversal::NoPath,
-            }
+            inner_traverse_astar(grid, c, goal, visited)
         })
-        .filter(|r| matches![r, Traversal::Found(_)])
-        .map(|p| match p {
-            Traversal::Found(v) => v,
-            Traversal::NoPath => unreachable!(),
-        })
-        .sorted_by(|l, r| l.len().cmp(&r.len()))
+        .flatten()
         .collect();
 
-    let c: Vec<usize> = results.iter().map(|i| i.len()).collect();
-    //println!("results len => {}, {:?}", &results.len(), c);
-
-    if results.len() > 0 {
-        let first = results.first().unwrap().to_owned();
-        return Traversal::Found(first);
+    if results.len() == 0 {
+        vec![Traversal::NoPath(visited)]
+    } else {
+        results
     }
-    Traversal::NoPath
 }
 
 pub fn traverse_astar<T: Passable>(
     grid: &Grid<T>,
     start: Coordinate,
     goal: Coordinate,
-) -> Traversal {
-    //let visited = Arc::new(RwLock::new(vec![]));
-    let visited = Box::new(vec![]);
-
+) -> Vec<Traversal> {
+    let visited = vec![];
     inner_traverse_astar(grid, start, goal, visited)
+}
+
+pub fn shortest_path<T: Passable>(
+    grid: &Grid<T>,
+    start: Coordinate,
+    goal: Coordinate,
+) -> Option<Vec<Coordinate>> {
+    let paths = traverse_astar(&grid, start, goal);
+    let sorted_paths: Vec<Vec<Coordinate>> = paths
+        .iter()
+        .filter(|&p| matches!(p, Traversal::Found(_)))
+        .map(|p| match p {
+            Traversal::Found(fp) => fp.clone(),
+            Traversal::NoPath(_) => unreachable!(),
+        })
+        .sorted_by(|l, r| l.len().cmp(&r.len()))
+        .collect();
+
+    if !sorted_paths.is_empty() {
+        Some(sorted_paths.iter().nth(0).unwrap().clone())
+    } else {
+        None
+    }
 }
 
 #[cfg(test)]
