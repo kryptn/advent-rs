@@ -2,6 +2,7 @@ use advent::input_store;
 
 #[derive(Clone)]
 struct Elf {
+    index: usize,
     next: usize,
     count: u32,
 }
@@ -9,18 +10,6 @@ struct Elf {
 struct Party {
     elves: Vec<Elf>,
     current: usize,
-}
-
-impl Party {
-    fn next_with_presents(&self, from: usize) -> usize {
-        for i in 1..self.elves.len() {
-            let elf = self.elves.get(from + i).expect("limiting index");
-            if elf.count > 0 {
-                return from + i;
-            }
-        }
-        unreachable!();
-    }
 }
 
 impl From<String> for Party {
@@ -31,6 +20,7 @@ impl From<String> for Party {
             elves.push(Elf {
                 next: (i + 1) % k,
                 count: 1,
+                index: i,
             })
         }
 
@@ -59,12 +49,50 @@ impl Iterator for Party {
     }
 }
 
+struct Party2 {
+    elves: Vec<u32>,
+}
+
+impl From<String> for Party2 {
+    fn from(k: String) -> Self {
+        let k = k.parse().unwrap();
+        let mut elves = Vec::new();
+        for i in 0..k {
+            elves.push(i + 1);
+        }
+
+        Self { elves }
+    }
+}
+
+impl Iterator for Party2 {
+    type Item = u32;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let target_index = self.elves.len() / 2;
+        self.elves.remove(target_index);
+
+        let this = self.elves.get(0)?.clone();
+        self.elves.rotate_left(1);
+
+        // if self.elves.len() % 1000 == 0 {
+        //     println!("progress: {}",  self.elves.len());
+        // }
+        Some(this)
+    }
+}
+
 fn main() {
     let input = input_store::get_input(2016, 19).trim().to_string();
+    //let input = "5".to_string();
 
-    let party: Party = input.into();
+    let party: Party = input.clone().into();
     let winner = party.last();
     println!("part 1 => {:?}", winner);
+
+    let party: Party2 = input.into();
+    let winner = party.last();
+    println!("part 2 => {:?}", winner);
 }
 
 #[cfg(test)]
@@ -77,16 +105,14 @@ mod test {
         assert_eq!(2, 2);
     }
 
-    #[rstest]
-    #[case("ADVENT", "ADVENT")]
-    fn p1_tests(#[case] given: &str, #[case] expected: &str) {
-        let mut party: Party = String::from("5").into();
+    #[test]
+    fn p1_tests() {
+        let party: Party = String::from("5").into();
 
         let out = party.last();
 
         assert_eq!(out, Some(3))
     }
-
 
     #[rstest]
     #[case("ADVENT", "ADVENT")]
