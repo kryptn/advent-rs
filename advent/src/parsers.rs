@@ -40,6 +40,12 @@ pub fn parse_usize(input: &str) -> IResult<&str, usize> {
     Ok((input, num.parse().unwrap()))
 }
 
+pub fn parse_num<T>(input: &str) -> IResult<&str, T> where T: FromStr, <T as FromStr>::Err: Debug {
+    let (input, num) = digit1(input)?;
+    let num = num.parse::<T>().unwrap();
+    Ok((input, num))
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
