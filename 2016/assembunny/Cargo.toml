@@ -1,5 +1,5 @@
 [package]
-name = "day12"
+name = "assembunny"
 version = "0.1.0"
 edition = "2018"
 
@@ -7,8 +7,6 @@ edition = "2018"
 
 [dependencies]
 advent = { path = "../../advent", features = ["parse"] }
-assembunny = { path = "../assembunny" }
-
 rstest = "0.11.0"
 anyhow = "1.0.43"
 itertools = "0.10.1"
