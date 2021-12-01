@@ -1,0 +1,17 @@
+[package]
+name = "advent-cli"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[[bin]]
+name = "advent"
+path = "src/main.rs"
+
+[dependencies]
+advent = { path = "../advent", features = ["fetch"] }
+
+anyhow = "1.0.43"
+clap = "2.33.3"
+rpassword =  "5.0.1"
