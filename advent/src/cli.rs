@@ -15,13 +15,13 @@ fn main() -> Result<()> {
         (@arg debug: -d ... "Sets the level of debugging information")
         (@subcommand get =>
             (about: "get input")
+            (@arg force: -f "Force fetching of input")
             (@arg verbose: -v --verbose "Print test information verbosely")
             (@arg year: +required "Select year")
             (@arg day: "Select day")
-
         )
-        (@subcommand cat =>
-            (about: "cat input")
+        (@subcommand show =>
+            (about: "show input")
             (@arg verbose: -v --verbose "Print test information verbosely")
             (@arg year: "Select year")
             (@arg day: "Select day")
@@ -44,21 +44,22 @@ fn main() -> Result<()> {
     match matches.subcommand() {
         ("get", Some(sub_m)) => {
             let year = sub_m.value_of("year").unwrap().parse::<u16>()?;
+            let force = sub_m.is_present("force");
 
             match sub_m.value_of("day") {
                 Some(day) => {
                     let day = day.parse::<u16>()?;
                     let selector = Selector { year, day };
-                    let _ = get_or_fetch_input(selector)?;
+                    let _ = get_or_fetch_input(selector, force)?;
                     eprintln!("success: fetched {}/{}", year, day);
                 }
                 None => {
-                    get_all_inputs(year)?;
+                    get_all_inputs(year, force)?;
                     eprintln!("success: fetched all of {}", year)
                 }
             }
         }
-        ("cat", Some(sub_m)) => {
+        ("show", Some(sub_m)) => {
             let year = sub_m.value_of("year").unwrap().parse::<u16>()?;
             let day = sub_m.value_of("day").unwrap().parse::<u16>()?;
 
