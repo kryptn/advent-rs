@@ -13,19 +13,13 @@ fn main() {
         })
         .collect();
 
-    let part_1 = depths
-        .iter()
-        .tuple_windows()
-        .map(|(a, b)| a < b)
-        .filter(|v| *v)
-        .count();
+    let part_1 = depths.iter().tuple_windows().filter(|(a, b)| a < b).count();
     println!("part 1 => {}", part_1);
 
     let part_2 = depths
         .iter()
         .tuple_windows()
-        .map(|(a, _, _, b)| a < b)
-        .filter(|v| *v)
+        .filter(|(a, _, _, b)| a < b)
         .count();
     println!("part 2 => {}", part_2);
 }
