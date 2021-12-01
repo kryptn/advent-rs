@@ -89,9 +89,9 @@ pub fn get_all_inputs(year: u16, force: bool) -> Result<()> {
     Ok(())
 }
 
-pub fn get_input(year: u16, day: u16, force: bool) -> String {
+pub fn get_input(year: u16, day: u16) -> String {
     let selector = input_store::Selector { year, day };
-    let puzzle_input = get_or_fetch_input(selector, force)
+    let puzzle_input = get_or_fetch_input(selector, false)
         .unwrap()
         .trim()
         .to_string();
@@ -106,6 +106,6 @@ mod tests {
 
     #[test]
     fn do_thing() {
-        assert!(get_input(2020, 1, false).len() > 0);
+        assert!(get_input(2020, 1).len() > 0);
     }
 }
