@@ -1,6 +1,7 @@
 use std::{fmt::Debug, str::FromStr};
 
 use nom::{
+    bytes::complete::tag,
     character::complete::{char, digit1, multispace0, one_of},
     combinator::{opt, value},
     error::ParseError,
@@ -40,10 +41,22 @@ pub fn parse_usize(input: &str) -> IResult<&str, usize> {
     Ok((input, num.parse().unwrap()))
 }
 
-pub fn parse_num<T>(input: &str) -> IResult<&str, T> where T: FromStr, <T as FromStr>::Err: Debug {
+pub fn parse_num<T>(input: &str) -> IResult<&str, T>
+where
+    T: FromStr,
+    <T as FromStr>::Err: Debug,
+{
     let (input, num) = digit1(input)?;
     let num = num.parse::<T>().unwrap();
     Ok((input, num))
+}
+
+pub fn parse_coordinate(input: &str) -> IResult<&str, crate::grid::Coordinate> {
+    let (input, left) = ws(parse_num)(input)?;
+    let (input, _) = tag(",")(input)?;
+    let (input, right) = ws(parse_num)(input)?;
+
+    Ok((input, crate::grid::Coordinate::new(left, right)))
 }
 
 #[cfg(test)]
