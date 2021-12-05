@@ -272,6 +272,34 @@ pub fn coordinates_within(a: Coordinate, b: Coordinate) -> Vec<Coordinate> {
     coords
 }
 
+pub fn line_between(a: Coordinate, b: Coordinate) -> Vec<Coordinate> {
+    if a.x == b.x || a.y == b.y {
+        return coordinates_within(a, b);
+    }
+
+    let mut cursor = a;
+    let mut coords = vec![a];
+
+    let x_delta = if a.x > b.x {
+        RelativeDirection::Left
+    } else {
+        RelativeDirection::Right
+    };
+
+    let y_delta = if a.y > b.y {
+        RelativeDirection::Down
+    } else {
+        RelativeDirection::Up
+    };
+
+    while cursor != b {
+        cursor = cursor + x_delta.into() + y_delta.into();
+        coords.push(cursor);
+    }
+
+    coords
+}
+
 pub fn iter_rows(a: Coordinate, b: Coordinate) -> Vec<Vec<Coordinate>> {
     let (y_left, y_right) = sorted(a.y, b.y);
     let (x_left, x_right) = sorted(a.x, b.x);
@@ -529,5 +557,17 @@ mod test {
 
         let p = traverse_astar(&grid, start, goal);
         dbg!(p);
+    }
+
+    #[test]
+    fn coord_line() {
+        let a = (0, 0).into();
+        let b = (2, 2).into();
+
+        let t = line_between(a, b);
+        let given = vec![(0, 0).into(), (1, 1).into(), (2, 2).into()];
+
+        assert_eq!(t, given);
+
     }
 }
