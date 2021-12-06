@@ -1,46 +1,68 @@
+use std::collections::{HashMap, VecDeque};
+
 use advent::input_store;
 
-fn fish_step(fish: Vec<u16>) -> Vec<u16> {
-    let mut next: Vec<u16> = fish
-        .iter()
-        .map(|d| match d {
-            0 => 6,
-            n => n - 1,
-        })
-        .collect();
+#[derive(Debug)]
+struct School {
+    fish: [u64; 7],
+    staged: [u64; 7],
+}
 
-    for _ in 0..fish.iter().filter(|&v| *v == 0).count() {
-        next.push(8);
+impl From<String> for School {
+    fn from(input: String) -> Self {
+        let mut fish = [0, 0, 0, 0, 0, 0, 0];
+        let staged = [0, 0, 0, 0, 0, 0, 0];
+
+        let timers: Vec<usize> = input
+            .trim()
+            .split(",")
+            .map(|n| n.parse().unwrap())
+            .collect();
+
+        for timer in timers {
+            fish[timer] += 1;
+        }
+
+        Self { fish, staged }
+    }
+}
+
+impl School {
+    fn step(&mut self) {
+        self.fish.rotate_left(1);
+        self.staged.rotate_left(1);
+
+        self.staged[1] = self.fish[0];
+        self.fish[0] += self.staged[6];
     }
 
-    next
+    fn total(&self) -> u64 {
+        let mut total = 0;
+
+        total += self.fish.iter().sum::<u64>();
+        total += self.staged[0];
+
+        total
+    }
 }
 
 fn main() {
     let input = input_store::get_input(2021, 06);
-    //let input = "3,4,3,1,2";
+    //let input = "3,4,3,1,2".to_string();
 
-    let mut fish: Vec<u16> = input
-        .trim()
-        .split(",")
-        .map(|n| n.parse().unwrap())
-        .collect();
+    let mut school: School = input.clone().into();
+
     for _ in 0..80 {
-        fish = fish_step(fish);
+        school.step();
     }
 
-    println!("part_1 => {}", fish.len());
+    println!("part_1 => {}", school.total());
 
-    let mut fish: Vec<u16> = input
-        .trim()
-        .split(",")
-        .map(|n| n.parse().unwrap())
-        .collect();
-    for _ in 0..256 {
-        fish = fish_step(fish);
+    for _ in 80..256 {
+        school.step();
     }
 
-    println!("part_2 => {}", fish.len());
+    println!("part_2 => {}", school.total());
 }
 
 #[cfg(test)]
