@@ -32,15 +32,15 @@ impl School {
         self.fish.rotate_left(1);
         self.staged.rotate_left(1);
 
-        self.staged[1] = self.fish[0];
-        self.fish[0] += self.staged[6];
+        self.staged[2] = self.fish[0];
+        self.fish[0] += self.staged[0];
     }
 
     fn total(&self) -> u64 {
         let mut total = 0;
 
         total += self.fish.iter().sum::<u64>();
-        total += self.staged[0];
+        total += self.staged[1];
 
         total
     }
