@@ -25,7 +25,6 @@ fn main() {
 
     println!("part_1 => {}", fuel);
 
-    let mut costs: HashMap<i64, i64> = HashMap::new();
     let mut fuel = i64::MAX;
 
     for target in min_p..=max_p {
@@ -33,11 +32,7 @@ fn main() {
             .iter()
             .map(|p| {
                 let distance = (target - p).abs();
-                if !costs.contains_key(&distance) {
-                    let cost = (1..=distance).reduce(|a, b| a + b).unwrap_or_default();
-                    costs.insert(distance, cost);
-                }
-                costs.get(&distance).unwrap().clone()
+                (distance * (distance + 1)) / 2
             })
             .sum();
 
