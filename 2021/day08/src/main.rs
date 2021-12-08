@@ -97,10 +97,7 @@ fn main() {
                 .iter()
                 .filter(|&p| {
                     let l = p.values.len();
-                    let is_unique = l == 2 || l == 4 || l == 3 || l == 7;
-                    println!("{:?} == {}", p, is_unique);
-
-                    is_unique
+                    l == 2 || l == 4 || l == 3 || l == 7
                 })
                 .count()
         })
