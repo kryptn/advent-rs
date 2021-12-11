@@ -94,16 +94,16 @@ fn main() {
         }
     }
 
-    let decon = deconstruct(&cavern);
-    println!("step 0");
-    print_grid(&decon);
+    // let decon = deconstruct(&cavern);
+    // println!("step 0");
+    // print_grid(&decon);
 
     let mut flashes = 0;
 
     let mut flashes_part1 = 0;
     let mut all_flashed = None;
 
-    for i in 0.. {
+    for i in 0..1_000_000 {
         let flashed = step(&cavern);
         flashes += flashed;
 
@@ -114,9 +114,9 @@ fn main() {
         // println!("step {}, flashed {} times, {} total", i + 1, flashed, flashes);
         // print_grid(&decon);
 
-        if flashed == cavern.len() {
+        if flashed == cavern.len() && all_flashed.is_none() {
             all_flashed = Some(i + 1);
-            break;
+            //break;
         }
     }
 
