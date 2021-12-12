@@ -69,44 +69,39 @@ impl Visitor {
         this
     }
 
-    fn step(&self) -> Vec<Self> {
+    fn p1_valid(&self) -> Vec<Rc<Cave>> {
         let current = self.path.get(self.path.len() - 1).unwrap();
 
-        let valid_connections: Vec<Rc<Cave>> = {
-            let lock = current.connections.lock().unwrap();
-            lock.iter()
-                .cloned()
-                .filter(|c| c.is_big() || !self.path.contains(c))
-                .collect()
-        };
-
-        valid_connections
-            .iter()
+        let lock = current.connections.lock().unwrap();
+        lock.iter()
             .cloned()
-            .map(|c| {
-                let next = self.clone();
-                next.with_path(c)
+            .filter(|c| c.is_big() || !self.path.contains(c))
+            .collect()
+    }
+
+    fn p2_valid(&self) -> Vec<Rc<Cave>> {
+        let current = self.path.get(self.path.len() - 1).unwrap();
+
+        let lock = current.connections.lock().unwrap();
+        lock.iter()
+            .cloned()
+            .filter(|c| {
+                if c.is_big() {
+                    true
+                } else if c.name == "start".to_string() {
+                    false
+                } else {
+                    !self.path.contains(c) || !self.has_visited_small_twice
+                }
             })
             .collect()
     }
 
-    fn step2(&self) -> Vec<Self> {
-        let current = self.path.get(self.path.len() - 1).unwrap();
-
-        let valid_connections: Vec<Rc<Cave>> = {
-            let lock = current.connections.lock().unwrap();
-            lock.iter()
-                .cloned()
-                .filter(|c| {
-                    if c.is_big() {
-                        true
-                    } else if c.name == "start".to_string() {
-                        false
-                    } else {
-                        !self.path.contains(c) || !self.has_visited_small_twice
-                    }
-                })
-                .collect()
+    fn step(&self, part_2: bool) -> Vec<Self> {
+        let valid_connections = if !part_2 {
+            self.p1_valid()
+        } else {
+            self.p2_valid()
         };
 
         valid_connections
@@ -125,7 +120,7 @@ impl Visitor {
     }
 }
 
-fn part_1(caves: &HashMap<String, Rc<Cave>>) -> Vec<Visitor> {
+fn traverse(caves: &HashMap<String, Rc<Cave>>, part_2: bool) -> Vec<Visitor> {
     let mut out: Vec<Visitor> = Vec::new();
     let start = "start".to_string();
     let start = caves.get(&start).unwrap().clone();
@@ -135,31 +130,7 @@ fn part_1(caves: &HashMap<String, Rc<Cave>>) -> Vec<Visitor> {
     let mut before = vec![initial];
 
     while !before.is_empty() {
-        let after: Vec<Visitor> = before.iter().map(|v| v.step()).flatten().collect();
-        before = Vec::new();
-        for visitor in after {
-            if visitor.at_destination() {
-                out.push(visitor);
-            } else {
-                before.push(visitor);
-            }
-        }
-    }
-
-    out
-}
-
-fn part_2(caves: &HashMap<String, Rc<Cave>>) -> Vec<Visitor> {
-    let mut out: Vec<Visitor> = Vec::new();
-    let start = "start".to_string();
-    let start = caves.get(&start).unwrap().clone();
-
-    let initial = Visitor::new(start, "end".to_string());
-
-    let mut before = vec![initial];
-
-    while !before.is_empty() {
-        let after: Vec<Visitor> = before.iter().map(|v| v.step2()).flatten().collect();
+        let after: Vec<Visitor> = before.iter().map(|v| v.step(part_2)).flatten().collect();
         before = Vec::new();
         for visitor in after {
             if visitor.at_destination() {
@@ -219,11 +190,11 @@ fn main() {
         right_lock.push(left.clone());
     }
 
-    let visitors = part_1(&caves);
+    let visitors = traverse(&caves, false);
 
     println!("part_1 => {}", visitors.len());
 
-    let p2_visitors = part_2(&caves);
+    let p2_visitors = traverse(&caves, true);
     println!("part_2 => {}", p2_visitors.len());
 }
 
