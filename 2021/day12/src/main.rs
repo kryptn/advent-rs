@@ -3,7 +3,6 @@ use std::{collections::HashMap, fmt::Debug, rc::Rc, sync::Mutex};
 
 use advent::input_store;
 
-
 struct Cave {
     name: String,
     connections: Mutex<Vec<Rc<Cave>>>,
@@ -22,12 +21,6 @@ impl PartialEq for Cave {
 }
 
 impl Eq for Cave {}
-
-impl Hash for Cave {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.name.hash(state);
-    }
-}
 
 impl Debug for Cave {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -53,16 +46,25 @@ impl From<String> for Cave {
 struct Visitor {
     path: Vec<Rc<Cave>>,
     destination: String,
+    has_visited_small_twice: bool,
 }
 
 impl Visitor {
     fn new(start: Rc<Cave>, destination: String) -> Self {
         let path = vec![start];
-        Self { path, destination }
+        Self {
+            path,
+            destination,
+            has_visited_small_twice: false,
+        }
     }
 
     fn with_path(self, path: Rc<Cave>) -> Self {
         let mut this = self;
+        if !path.is_big() && this.path.contains(&path) {
+            this.has_visited_small_twice = true;
+        }
+
         this.path.push(path);
         this
     }
@@ -75,6 +77,35 @@ impl Visitor {
             lock.iter()
                 .cloned()
                 .filter(|c| c.is_big() || !self.path.contains(c))
+                .collect()
+        };
+
+        valid_connections
+            .iter()
+            .cloned()
+            .map(|c| {
+                let next = self.clone();
+                next.with_path(c)
+            })
+            .collect()
+    }
+
+    fn step2(&self) -> Vec<Self> {
+        let current = self.path.get(self.path.len() - 1).unwrap();
+
+        let valid_connections: Vec<Rc<Cave>> = {
+            let lock = current.connections.lock().unwrap();
+            lock.iter()
+                .cloned()
+                .filter(|c| {
+                    if c.is_big() {
+                        true
+                    } else if c.name == "start".to_string() {
+                        false
+                    } else {
+                        !self.path.contains(c) || !self.has_visited_small_twice
+                    }
+                })
                 .collect()
         };
 
@@ -118,10 +149,34 @@ fn part_1(caves: &HashMap<String, Rc<Cave>>) -> Vec<Visitor> {
     out
 }
 
+fn part_2(caves: &HashMap<String, Rc<Cave>>) -> Vec<Visitor> {
+    let mut out: Vec<Visitor> = Vec::new();
+    let start = "start".to_string();
+    let start = caves.get(&start).unwrap().clone();
+
+    let initial = Visitor::new(start, "end".to_string());
+
+    let mut before = vec![initial];
+
+    while !before.is_empty() {
+        let after: Vec<Visitor> = before.iter().map(|v| v.step2()).flatten().collect();
+        before = Vec::new();
+        for visitor in after {
+            if visitor.at_destination() {
+                out.push(visitor);
+            } else {
+                before.push(visitor);
+            }
+        }
+    }
+
+    out
+}
+
 fn main() {
     let input = input_store::get_input(2021, 12);
 
-    //     let input = r#"start-A
+    // let input = r#"start-A
     // start-b
     // A-c
     // A-b
@@ -167,7 +222,9 @@ fn main() {
     let visitors = part_1(&caves);
 
     println!("part_1 => {}", visitors.len());
-    println!("part_2 => {}", "not done");
+
+    let p2_visitors = part_2(&caves);
+    println!("part_2 => {}", p2_visitors.len());
 }
 
 #[cfg(test)]
