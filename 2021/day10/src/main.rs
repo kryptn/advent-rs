@@ -63,8 +63,6 @@ fn score_incomplete(ns: NavigationStatus) -> u64 {
                 _ => unreachable!(),
             }
         }
-
-        println!("{} -> {}", v, s);
     }
 
     s
