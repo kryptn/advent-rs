@@ -12,7 +12,7 @@ struct Dot {
 
 impl std::fmt::Display for Dot {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", if self.value { "#" } else { "." })
+        write!(f, "{}", if self.value { "█" } else { " " })
     }
 }
 
@@ -55,9 +55,6 @@ fn main() {
 
     let mut dots = grid_from_input(dots);
     let folds = folds_from_input(folds);
-
-    dbg!(&dots);
-    dbg!(&folds);
 
     let mut part_1 = None;
 
