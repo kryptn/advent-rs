@@ -21,6 +21,22 @@ impl std::fmt::Display for Coordinate {
     }
 }
 
+#[derive(Debug, Clone)]
+pub enum Axis {
+    X(i32),
+    Y(i32),
+}
+
+impl Axis {
+    pub fn new(along: char, value: i32) -> Self {
+        match along {
+            'x' => Axis::X(value),
+            'y' => Axis::Y(value),
+            _ => unreachable!(),
+        }
+    }
+}
+
 #[derive(Hash, Eq, PartialEq, Copy, Clone, Debug)]
 
 pub enum CardinalDirection {
@@ -139,6 +155,13 @@ impl Coordinate {
             RelativeDirection::Down => self.scale(-1),
         }
     }
+
+    pub fn mirror(&self, axis: Axis) -> Self {
+        match axis {
+            Axis::X(v) => (self.x + ((v - self.x) * 2), self.y).into(),
+            Axis::Y(v) => (self.x, self.y + ((v - self.y) * 2)).into(),
+        }
+    }
 }
 
 impl From<CardinalDirection> for Coordinate {
@@ -166,6 +189,15 @@ impl From<RelativeDirection> for Coordinate {
 impl From<(i32, i32)> for Coordinate {
     fn from(t: (i32, i32)) -> Self {
         Self::new(t.0, t.1)
+    }
+}
+
+impl From<&str> for Coordinate {
+    fn from(input: &str) -> Self {
+        let mut input_split = input.trim().split(",");
+        let x = input_split.next().unwrap().parse().unwrap();
+        let y = input_split.next().unwrap().parse().unwrap();
+        (x, y).into()
     }
 }
 
@@ -356,12 +388,18 @@ pub fn bounding_box<T>(grid: &Grid<T>) -> (Coordinate, Coordinate) {
     (lower, upper)
 }
 
-pub fn print_grid<T: std::fmt::Display>(g: &Grid<T>) {
+pub fn print_grid<T>(g: &Grid<T>)
+where
+    T: Default + std::fmt::Display + Clone,
+{
     let (lower, upper) = bounding_box(&g);
 
     for row in iter_rows(lower, upper) {
         for coord in row {
-            let item = g.get(&coord).unwrap();
+            let item = match g.get(&coord) {
+                Some(i) => i.clone(),
+                None => T::default(),
+            };
             print!("{}", item);
         }
         print!("\n");
@@ -568,6 +606,5 @@ mod test {
         let given = vec![(0, 0).into(), (1, 1).into(), (2, 2).into()];
 
         assert_eq!(t, given);
-
     }
 }
