@@ -43,11 +43,6 @@ fn reduce_chunks(input: &str) -> NavigationStatus {
     NavigationStatus::Valid
 }
 
-fn complete_chunks(input: &str) -> String {
-    println!("{}", input);
-
-    String::new()
-}
 
 fn score_incomplete(ns: NavigationStatus) -> u64 {
     let mut s = 0;
@@ -108,12 +103,6 @@ fn main() {
     let this_score = score(&statuses);
 
     println!("part_1 => {}", this_score);
-
-    for status in &statuses {
-        if let NavigationStatus::Incomplete(line) = status {
-            complete_chunks(&line);
-        }
-    }
 
     let mut scores: Vec<u64> = statuses
         .iter()
