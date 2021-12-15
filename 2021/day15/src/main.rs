@@ -68,51 +68,38 @@ fn explore_grid(source: &Grid<i32>, by: Coordinate) -> Grid<i32> {
     out
 }
 
+fn shortest_path(grid: &Grid<i32>) -> i32 {
+    let (graph, start, end) = build_graph(&grid);
+    let (cost, _) = astar(
+        &graph,
+        start,
+        |finish| finish == end,
+        |e| e.weight().clone(),
+        |n| {
+            let pos = graph.node_weight(n).unwrap().clone();
+            let end = graph.node_weight(end).unwrap().clone();
+            manhattan(pos, end)
+        },
+    )
+    .unwrap();
+    println!(
+        "graph nodes: {}, graph edges: {}",
+        graph.node_count(),
+        graph.edge_count()
+    );
+    cost
+}
+
 fn main() {
     let input = input_store::get_input(2021, 15);
+    let grid: Grid<i32> = grid::from_text(&input).unwrap();
 
-    let part_1 = {
-        let grid: Grid<i32> = grid::from_text(&input).unwrap();
-        let (graph, start, end) = build_graph(&grid);
-        let (cost, _) = astar(
-            &graph,
-            start,
-            |finish| finish == end,
-            |e| e.weight().clone(),
-            |_| 0,
-        )
-        .unwrap();
-        println!(
-            "graph nodes: {}, graph edges: {}",
-            graph.node_count(),
-            graph.edge_count()
-        );
-        cost
-    };
+    let part_1 = shortest_path(&grid);
 
     println!("part_1 => {}", part_1);
 
-    let part_2 = {
-        let grid: Grid<i32> = grid::from_text(&input).unwrap();
-        let explored_grid = explore_grid(&grid, (4, 4).into());
-        let (graph, start, end) = build_graph(&explored_grid);
-        let (cost, _) = astar(
-            &graph,
-            start,
-            |finish| finish == end,
-            |e| e.weight().clone(),
-            |_| 0,
-        )
-        .unwrap();
-
-        println!(
-            "graph nodes: {}, graph edges: {}",
-            graph.node_count(),
-            graph.edge_count()
-        );
-
-        cost
-    };
+    let explored_grid = explore_grid(&grid, (4, 4).into());
+    let part_2 = shortest_path(&explored_grid);
 
     println!("part_2 => {}", part_2);
 }
