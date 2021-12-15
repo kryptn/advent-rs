@@ -11,10 +11,6 @@ use petgraph::{
     Graph,
 };
 
-fn cost(er: graph::EdgeReference<i32>) -> i32 {
-    er.weight().clone()
-}
-
 fn build_graph(grid: &Grid<i32>) -> (Graph<Coordinate, i32>, NodeIndex, NodeIndex) {
     let mut coordinate_idx_lookup = HashMap::new();
 
@@ -78,8 +74,19 @@ fn main() {
     let part_1 = {
         let grid: Grid<i32> = grid::from_text(&input).unwrap();
         let (graph, start, end) = build_graph(&grid);
-        let (cost, _) = astar(&graph, start, |finish| finish == end, cost, |_| (0 as i32)).unwrap();
-
+        let (cost, _) = astar(
+            &graph,
+            start,
+            |finish| finish == end,
+            |e| e.weight().clone(),
+            |_| 0,
+        )
+        .unwrap();
+        println!(
+            "graph nodes: {}, graph edges: {}",
+            graph.node_count(),
+            graph.edge_count()
+        );
         cost
     };
 
@@ -89,7 +96,20 @@ fn main() {
         let grid: Grid<i32> = grid::from_text(&input).unwrap();
         let explored_grid = explore_grid(&grid, (4, 4).into());
         let (graph, start, end) = build_graph(&explored_grid);
-        let (cost, _) = astar(&graph, start, |finish| finish == end, cost, |_| (0 as i32)).unwrap();
+        let (cost, _) = astar(
+            &graph,
+            start,
+            |finish| finish == end,
+            |e| e.weight().clone(),
+            |_| 0,
+        )
+        .unwrap();
+
+        println!(
+            "graph nodes: {}, graph edges: {}",
+            graph.node_count(),
+            graph.edge_count()
+        );
 
         cost
     };
