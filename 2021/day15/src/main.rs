@@ -1,25 +1,25 @@
 use std::collections::HashMap;
 
 use advent::{
-    grid::{self, bounding_box, Coordinate, Grid},
+    grid::{self, bounding_box, coordinates_within, manhattan, Coordinate, Grid},
     input_store,
 };
 
 use petgraph::{
     algo::astar,
-    graph::{self, DiGraph, NodeIndex, UnGraph},
+    graph::{self, DiGraph, NodeIndex},
     Graph,
 };
 
-fn cost(er: graph::EdgeReference<f32>) -> f32 {
+fn cost(er: graph::EdgeReference<i32>) -> i32 {
     er.weight().clone()
 }
 
-fn build_graph(grid: &Grid<f32>) -> (Graph<Coordinate, f32>, NodeIndex, NodeIndex) {
+fn build_graph(grid: &Grid<i32>) -> (Graph<Coordinate, i32>, NodeIndex, NodeIndex) {
     let mut coordinate_idx_lookup = HashMap::new();
 
     let graph = {
-        let mut g = DiGraph::<Coordinate, f32>::default();
+        let mut g = DiGraph::<Coordinate, i32>::default();
 
         for value in grid.keys().cloned() {
             let idx = g.add_node(value.clone());
@@ -48,32 +48,53 @@ fn build_graph(grid: &Grid<f32>) -> (Graph<Coordinate, f32>, NodeIndex, NodeInde
     (graph, start_idx, end_idx)
 }
 
+fn explore_grid(source: &Grid<i32>, by: Coordinate) -> Grid<i32> {
+    let mut out = Grid::new();
+    let (_, size) = bounding_box(&source);
+    let size = size + (1, 1).into();
+
+    for sector in coordinates_within((0, 0).into(), by) {
+        for (coord, risk) in source {
+            let shifted = coord.clone() + (sector.x * size.x, sector.y * size.y).into();
+
+            let risk = {
+                let mut risk = *risk as i32;
+                risk += manhattan((0, 0).into(), sector);
+                risk -= 1;
+                risk = risk % 9;
+                risk + 1
+            };
+
+            out.insert(shifted, risk as i32);
+        }
+    }
+
+    out
+}
+
 fn main() {
     let input = input_store::get_input(2021, 15);
 
-    //     let input = r#"1163751742
-    // 1381373672
-    // 2136511328
-    // 3694931569
-    // 7463417111
-    // 1319128137
-    // 1359912421
-    // 3125421639
-    // 1293138521
-    // 2311944581"#;
+    let part_1 = {
+        let grid: Grid<i32> = grid::from_text(&input).unwrap();
+        let (graph, start, end) = build_graph(&grid);
+        let (cost, _) = astar(&graph, start, |finish| finish == end, cost, |_| (0 as i32)).unwrap();
 
-    let grid: Grid<f32> = grid::from_text(&input).unwrap();
+        cost
+    };
 
-    let (graph, start, end) = build_graph(&grid);
+    println!("part_1 => {}", part_1);
 
-    let (cost, path) = astar(&graph, start, |finish| finish == end, cost, |_| (0 as f32)).unwrap();
+    let part_2 = {
+        let grid: Grid<i32> = grid::from_text(&input).unwrap();
+        let explored_grid = explore_grid(&grid, (4, 4).into());
+        let (graph, start, end) = build_graph(&explored_grid);
+        let (cost, _) = astar(&graph, start, |finish| finish == end, cost, |_| (0 as i32)).unwrap();
 
-    // dbg!(coords);
-    // dbg!(cost);
+        cost
+    };
 
-    println!("part_1 => {}", cost);
-
-    println!("part_2 => {}", "not done");
+    println!("part_2 => {}", part_2);
 }
 
 #[cfg(test)]
