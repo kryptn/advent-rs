@@ -7,7 +7,7 @@ use advent::{
 
 use petgraph::{
     algo::astar,
-    graph::{self, DiGraph, NodeIndex},
+    graph::{DiGraph, NodeIndex},
     Graph,
 };
 
