@@ -7,9 +7,10 @@ use std::{
     sync::{Arc, Mutex, MutexGuard, RwLock},
 };
 
+use anyhow::Result;
 use itertools::Itertools;
 
-#[derive(Hash, Eq, PartialEq, Copy, Clone, Debug)]
+#[derive(Hash, Eq, PartialEq, Copy, Clone, Debug, Default)]
 pub struct Coordinate {
     pub x: i32,
     pub y: i32,
@@ -493,6 +494,22 @@ pub fn shortest_path<T: Passable>(
     } else {
         None
     }
+}
+
+pub fn from_text<T>(input: &str) -> Result<Grid<T>>
+where
+    T: FromStr + Default,
+{
+    let mut out = Grid::new();
+
+    for (y, line) in input.trim().lines().enumerate() {
+        for (x, value) in line.trim().chars().enumerate() {
+            let value = value.to_string().parse::<T>().unwrap_or_default();
+            out.insert((x as i32, y as i32).into(), value);
+        }
+    }
+
+    Ok(out)
 }
 
 #[cfg(test)]
