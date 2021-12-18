@@ -51,11 +51,11 @@ fn main() -> Result<()> {
                     let day = day.parse::<u16>()?;
                     let selector = Selector { year, day };
                     let _ = get_or_fetch_input(selector, force)?;
-                    eprintln!("success: fetched {}/{}", year, day);
+                    eprintln!("success: fetched {}-{:0>2}", year, day);
                 }
                 None => {
                     get_all_inputs(year, force)?;
-                    eprintln!("success: fetched all of {}", year)
+                    eprintln!("success: fetched all of year {}", year)
                 }
             }
         }
