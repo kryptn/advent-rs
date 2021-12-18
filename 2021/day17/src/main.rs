@@ -147,7 +147,7 @@ fn main() {
     let max_y = valid_velocities.iter().map(|(_, y)| y).max().unwrap();
 
     println!("part_1 => {}", max_y);
-    println!("part_2 => {}", "not done");
+    println!("part_2 => {}", valid_velocities.len());
 }
 
 #[cfg(test)]
