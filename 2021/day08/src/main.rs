@@ -1,6 +1,68 @@
-use std::collections::HashSet;
+#[macro_use]
+extern crate lazy_static;
+
+use std::collections::{HashMap, HashSet};
 
 use advent::input_store;
+
+#[derive(Debug, Eq, PartialEq, Hash)]
+enum Segment {
+    A,
+    B,
+    C,
+    D,
+    E,
+    F,
+    G,
+}
+
+struct Number {
+    segments: HashSet<Segment>,
+}
+
+lazy_static! {
+    static ref ONE: HashSet<Segment> = HashSet::from([Segment::B, Segment::C]);
+    static ref TWO: HashSet<Segment> =
+        HashSet::from([Segment::A, Segment::B, Segment::D, Segment::E, Segment::G]);
+    static ref THREE: HashSet<Segment> =
+        HashSet::from([Segment::A, Segment::B, Segment::C, Segment::D, Segment::G]);
+    static ref FOUR: HashSet<Segment> =
+        HashSet::from([Segment::B, Segment::C, Segment::F, Segment::G]);
+    static ref FIVE: HashSet<Segment> = HashSet::from([Segment::B, Segment::C]);
+    static ref SIX: HashSet<Segment> = HashSet::from([Segment::B, Segment::C]);
+    static ref SEVEN: HashSet<Segment> = HashSet::from([Segment::A, Segment::B, Segment::C]);
+    static ref EIGHT: HashSet<Segment> = HashSet::from([
+        Segment::A,
+        Segment::B,
+        Segment::C,
+        Segment::D,
+        Segment::E,
+        Segment::F,
+        Segment::G
+    ]);
+    static ref NINE: HashSet<Segment> = HashSet::from([
+        Segment::A,
+        Segment::B,
+        Segment::C,
+        Segment::D,
+        Segment::F,
+        Segment::G
+    ]);
+    static ref ZERO: HashSet<Segment> = HashSet::from([
+        Segment::A,
+        Segment::B,
+        Segment::C,
+        Segment::D,
+        Segment::E,
+        Segment::F
+    ]);
+}
+
+impl From<HashSet<Segment>> for Number {
+    fn from(segments: HashSet<Segment>) -> Self {
+        todo!()
+    }
+}
 
 #[derive(Debug, Eq, PartialEq, Hash)]
 enum Signal {
@@ -49,6 +111,8 @@ impl From<&str> for Pattern {
 struct Display {
     input: Vec<Pattern>,
     output: Vec<Pattern>,
+
+    digit_map: HashMap<usize, Pattern>,
 }
 
 impl From<&str> for Display {
@@ -71,7 +135,11 @@ impl From<&str> for Display {
             }
         }
 
-        Self { input, output }
+        Self {
+            input,
+            output,
+            digit_map: HashMap::new(),
+        }
     }
 }
 
