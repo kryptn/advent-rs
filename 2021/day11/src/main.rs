@@ -116,7 +116,7 @@ fn main() {
 
         if flashed == cavern.len() && all_flashed.is_none() {
             all_flashed = Some(i + 1);
-            //break;
+            break;
         }
     }
 
