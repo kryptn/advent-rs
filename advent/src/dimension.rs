@@ -1,3 +1,5 @@
+#![allow(unused_variables)]
+
 trait Axis {}
 
 trait Coordinate {
