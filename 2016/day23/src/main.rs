@@ -1,11 +1,9 @@
 use advent::input_store;
+use assembunny::State;
 
 fn main() {
-    let input = input_store::get_input(YEAR, DAY);
-
-
-    println!("part_1 => {}", "not done");
-    println!("part_2 => {}", "not done");
+    let input = input_store::get_input(2016, 23);
+    let machine: State = input.into();
 }
 
 #[cfg(test)]

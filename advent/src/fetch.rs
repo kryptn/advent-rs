@@ -69,9 +69,9 @@ pub fn submit_answer(
     // selected.inner_html()
 }
 
-pub fn get_or_fetch_input(selector: input_store::Selector, force: bool) -> Result<String> {
+pub fn get_or_fetch_input(selector: &input_store::Selector, force: bool) -> Result<String> {
     if !force && selector.exists() {
-        return input_store::read_puzzle_input(selector);
+        return input_store::read_puzzle_input(&selector);
     }
 
     let value = fetch_input(&selector)?;
@@ -80,18 +80,18 @@ pub fn get_or_fetch_input(selector: input_store::Selector, force: bool) -> Resul
     Ok(value)
 }
 
-pub fn get_all_inputs(year: u16, force: bool) -> Result<()> {
+pub fn get_all_inputs(year: usize, force: bool) -> Result<()> {
     for day in 1..=25 {
         let selector = input_store::Selector { year, day };
-        get_or_fetch_input(selector, force)?;
+        get_or_fetch_input(&selector, force)?;
     }
 
     Ok(())
 }
 
-pub fn get_input(year: u16, day: u16) -> String {
+pub fn get_input(year: usize, day: usize) -> String {
     let selector = input_store::Selector { year, day };
-    let puzzle_input = get_or_fetch_input(selector, false)
+    let puzzle_input = get_or_fetch_input(&selector, false)
         .unwrap()
         .trim()
         .to_string();

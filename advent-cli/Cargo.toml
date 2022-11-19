@@ -13,5 +13,5 @@ path = "src/main.rs"
 advent = { path = "../advent", features = ["fetch"] }
 
 anyhow = "1.0.43"
-clap = "2.33.3"
-rpassword =  "5.0.1"
+clap = { version = "4.0.26", features = ["derive"] }
+rpassword =  "7.1.0"

@@ -10,19 +10,20 @@ name = "advent"
 path = "src/lib.rs"
 
 [dependencies]
-anyhow = "1.0.43"
-dirs = "3.0"
-itertools = "0.10.1"
+anyhow = "1.0.66"
+dirs = "4.0.0"
+itertools = "0.10.5"
 
-reqwest = { version = "0.11.4", features = ["blocking"], optional = true}
-url = { version = "2.2.2", optional = true}
+reqwest = { version = "0.11.13", default-features = false, features = ["blocking", "rustls-tls"], optional = true}
+url = { version = "2.3.1", optional = true}
 # scraper = "0.12.0"
 
-nom = { version = "7.0.0", optional = true}
+nom = { version = "7.1.1", optional = true}
 
 [features]
 fetch = ["reqwest", "url"]
 parse = ["nom"]
+default = ["parse"]
 
 [dev-dependencies]
-rstest = "0.11.0"
+rstest = "0.15.0"

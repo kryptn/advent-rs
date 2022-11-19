@@ -6,6 +6,7 @@
 
 or clone the repo and `cargo install --path advent-cli`
 
+set the `AOC_CONFIG` environment variable to customize where inputs and your session token is stored locally. it defaults to `~/.advent_of_code/`
 
 # other tools
 

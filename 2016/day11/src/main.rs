@@ -1,11 +1,7 @@
 use advent::input_store;
 
 fn main() {
-    let input = input_store::get_input(YEAR, DAY);
-
-
-    println!("part_1 => {}", "not done");
-    println!("part_2 => {}", "not done");
+    let input = input_store::get_input(2016, 11);
 }
 
 #[cfg(test)]

@@ -365,28 +365,31 @@ fn main() {
     //     //println!("{:?}", first.similar(second));
     // }
 
-    let mut scanners = scanners;
+    // let mut scanners = scanners;
 
-    while scanners.len() > 1 {
-        scanners = combine(scanners);
-        println!("{}", scanners.len());
-    }
-
-    let num_beacons = {
-        let s = scanners.first().unwrap();
-        s.perspectives.first().unwrap().beacons.len()
-    };
-
-    println!("part_1 => {}", num_beacons);
-    println!("part_2 => {}", "not done");
-
-    //let a = [10, 2, 0];
-
-    // for rm in all_rotations() {
-    //     let result = rotate(rm, a);
-    //     println!("{:?}", result);
+    // while scanners.len() > 1 {
+    //     scanners = combine(scanners);
+    //     println!("{}", scanners.len());
     // }
 
+    // let num_beacons = {
+    //     let s = scanners.first().unwrap();
+    //     s.perspectives.first().unwrap().beacons.len()
+    // };
+
+    // println!("part_1 => {}", num_beacons);
+    // println!("part_2 => {}", "not done");
+
+    let a = [10, 2, 0];
+
+    for rm in all_rotations() {
+        let result = rotate(rm, a);
+        println!("{:?}", result);
+    }
+
+    let r: HashSet<Vector3<isize>> = all_rotations().iter().map(|&rm| rotate(rm, a)).collect();
+
+    dbg!(r.len());
     //dbg!(scanners.get(0).unwrap());
 }
 

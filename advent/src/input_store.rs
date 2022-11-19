@@ -32,9 +32,10 @@ fn cookie_file_path() -> PathBuf {
     p
 }
 
+#[derive(Clone)]
 pub struct Selector {
-    pub year: u16,
-    pub day: u16,
+    pub year: usize,
+    pub day: usize,
 }
 
 impl Selector {
@@ -57,7 +58,7 @@ pub fn get_cookie() -> String {
     fs::read_to_string(&cookie_path).expect("error reading cookie file")
 }
 
-pub fn write_puzzle_input(selector: Selector, value: String) -> Result<()> {
+pub fn write_puzzle_input(selector: &Selector, value: String) -> Result<()> {
     let input_filename = selector.filename();
 
     DirBuilder::new()
@@ -70,7 +71,7 @@ pub fn write_puzzle_input(selector: Selector, value: String) -> Result<()> {
     Ok(())
 }
 
-pub fn read_puzzle_input(selector: Selector) -> Result<String> {
+pub fn read_puzzle_input(selector: &Selector) -> Result<String> {
     let input_filename = selector.filename();
 
     let file = File::open(input_filename)?;
@@ -80,9 +81,9 @@ pub fn read_puzzle_input(selector: Selector) -> Result<String> {
     Ok(value)
 }
 
-pub fn get_input(year: u16, day: u16) -> String {
+pub fn get_input(year: usize, day: usize) -> String {
     let selector = Selector { year, day };
-    read_puzzle_input(selector).unwrap()
+    read_puzzle_input(&selector).unwrap()
 }
 
 pub fn set_cookie(cookie: String, force: bool) -> Result<()> {

@@ -38,9 +38,18 @@ pub enum Value {
 #[derive(Clone, Debug)]
 pub enum Instruction {
     Copy(Value, Register),
+    ToggledJumpNotZero(Value, Register),
     Increment(Register),
     Decrement(Register),
     JumpNotZero(Value, Value),
+    ToggledCopy(Value, Value),
+    Toggle(Value),
+}
+
+impl Instruction {
+    fn toggle(self) -> Self {
+
+    }
 }
 
 impl From<&str> for Instruction {
@@ -151,6 +160,22 @@ impl machine::Apply<Instruction> for State {
                     self.ptr + 1
                 },
             },
+            Instruction::Toggle(offset) => Self {
+                instructions: self.instructions.clone().toggle(self.get_value(offset)),
+                memory: self.memory.clone(),
+                ptr: self.ptr + 1,
+            },
+            Instruction::ToggledCopy(value, reg, ) => {
+
+                Self {
+
+                    instructions: self.instructions.clone(),
+                    memory: self.memory.clone(),
+                    ptr: self.ptr + 1,
+                }
+            },
+            Instruction::ToggledJumpNotZero(_, _) => todo!(),
+
         }
     }
 }
@@ -198,6 +223,16 @@ fn parse_dec(input: &str) -> IResult<&str, Instruction> {
     }
 }
 
+fn parse_tgl(input: &str) -> IResult<&str, Instruction> {
+    let (input, (_, v)) = tuple((ws(tag("tgl")), parse_value))(input)?;
+
+    if let Value::Value(_) = v {
+        Ok((input, Instruction::Toggle(v)))
+    } else {
+        unreachable!()
+    }
+}
+
 fn parse_jnz(input: &str) -> IResult<&str, Instruction> {
     let (input, (_, test, offset)) = tuple((ws(tag("jnz")), parse_operand, parse_operand))(input)?;
     Ok((input, Instruction::JumpNotZero(test, offset)))
@@ -217,7 +252,6 @@ mod tests {
     fn it_works() {
         assert_eq!(2 + 2, 4);
     }
-
 
     #[test]
     fn test_copy_inst() {

@@ -66,6 +66,8 @@ fn get_score(polymer: &HashMap<String, isize>) -> isize {
         .map(|(k, v)| (k.clone(), v.clone()))
         .collect();
 
+    println!("{}", elements.values().sum::<isize>());
+
     elements.values().max().unwrap() - elements.values().min().unwrap()
 }
 
@@ -97,6 +99,8 @@ fn main() {
         let element = l.to_string();
         *polymer.get_mut(&element).unwrap() += 1;
     }
+
+
 
     for _ in 0..10 {
         insert(&mut polymer, &rules);

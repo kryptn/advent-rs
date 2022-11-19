@@ -142,6 +142,20 @@ impl Coordinate {
         ]
     }
 
+    pub fn grid_around(&self) -> Vec<Self> {
+        vec![
+            Coordinate::new(self.x - 1, self.y - 1),
+            Coordinate::new(self.x, self.y - 1),
+            Coordinate::new(self.x + 1, self.y - 1),
+            Coordinate::new(self.x - 1, self.y),
+            Coordinate::new(self.x, self.y),
+            Coordinate::new(self.x + 1, self.y),
+            Coordinate::new(self.x - 1, self.y + 1),
+            Coordinate::new(self.x, self.y + 1),
+            Coordinate::new(self.x + 1, self.y + 1),
+        ]
+    }
+
     pub fn turn(&self, dir: RelativeDirection) -> Self {
         match dir {
             RelativeDirection::Right => Self {
@@ -512,9 +526,37 @@ where
     Ok(out)
 }
 
+struct NewGrid<T>(HashMap<Coordinate, T>);
+
+impl<T> std::ops::Deref for NewGrid<T> {
+    type Target = HashMap<Coordinate, T>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<T> std::ops::DerefMut for NewGrid<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl<T> NewGrid<T> {
+    fn new() -> Self {
+        NewGrid(HashMap::new())
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[test]
+    fn try_newgrid() {
+        let mut grid: NewGrid<i32> = NewGrid::new();
+        grid.insert((0, 0).into(), 3);
+    }
 
     #[test]
     fn test_range() {

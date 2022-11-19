@@ -1,98 +1,61 @@
 use advent::{
-    fetch::{self, get_all_inputs, get_or_fetch_input},
+    fetch::{get_all_inputs, get_or_fetch_input},
     input_store::{read_puzzle_input, set_cookie, Selector},
 };
-use clap::clap_app;
+use clap::{command, Parser, Subcommand};
 
 use anyhow::Result;
-use rpassword::prompt_password_stdout;
+use rpassword::prompt_password;
+
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Cli {
+    #[command(subcommand)]
+    command: Command,
+}
+
+#[derive(Subcommand, Debug)]
+enum Command {
+    Get { year: usize, day: usize },
+    GetYear { year: usize },
+    Show { year: usize, day: usize },
+    SetCookie { cookie: Option<String> },
+}
 
 fn main() -> Result<()> {
-    let matches = clap_app!(advent =>
-        (version: "1.0")
-        (author: "David Bibb <kryptn@gmail.com>")
-        (about: "Fetches Advent of Code inputs")
-        (@arg debug: -d ... "Sets the level of debugging information")
-        (@subcommand get =>
-            (about: "get input")
-            (@arg force: -f "Force fetching of input")
-            (@arg verbose: -v --verbose "Print test information verbosely")
-            (@arg year: +required "Select year")
-            (@arg day: "Select day")
-        )
-        (@subcommand show =>
-            (about: "show input")
-            (@arg verbose: -v --verbose "Print test information verbosely")
-            (@arg year: "Select year")
-            (@arg day: "Select day")
-        )
-        (@subcommand submit =>
-            (about: "submit an answer")
-            (@arg verbose: -v --verbose "Print test information verbosely")
-            (@arg year: "Select year")
-            (@arg day: "Select day")
-            (@arg level: "what level")
-            (@arg answer: "what level")
-        )
-        (@subcommand cookie =>
-            (about: "set the advent cookie")
-            (@arg force: -f "overwrite existing cookie")
-        )
-    )
-    .get_matches();
+    let cli = Cli::parse();
 
-    match matches.subcommand() {
-        ("get", Some(sub_m)) => {
-            let year = sub_m.value_of("year").unwrap().parse::<u16>()?;
-            let force = sub_m.is_present("force");
-
-            match sub_m.value_of("day") {
-                Some(day) => {
-                    let day = day.parse::<u16>()?;
-                    let selector = Selector { year, day };
-                    let _ = get_or_fetch_input(selector, force)?;
-                    eprintln!("success: fetched {}-{:0>2}", year, day);
-                }
-                None => {
-                    get_all_inputs(year, force)?;
-                    eprintln!("success: fetched all of year {}", year)
-                }
+    match cli.command {
+        Command::Get { year, day } => {
+            let selector = Selector { year, day };
+            get_or_fetch_input(&selector, false)?;
+            eprintln!("success: fetched {}-{:0>2}", year, day);
+        }
+        Command::GetYear { year } => {
+            get_all_inputs(year, false)?;
+            eprintln!("success: fetched all of year {}", year)
+        }
+        Command::Show { year, day } => {
+            let selector = Selector { year, day };
+            get_or_fetch_input(&selector, false)?;
+            if let Ok(value) = read_puzzle_input(&selector) {
+                println!("{}", value)
             }
         }
-        ("show", Some(sub_m)) => {
-            let year = sub_m.value_of("year").unwrap().parse::<u16>()?;
-            let day = sub_m.value_of("day").unwrap().parse::<u16>()?;
+        Command::SetCookie { cookie } => {
+            let cookie = match cookie {
+                Some(value) => value,
+                None => prompt_password("Your cookie value: ")?,
+            };
+            let cookie = if !cookie.starts_with("session=") {
+                format!("session={}", cookie)
+            } else {
+                cookie
+            };
 
-            let selector = Selector { year, day };
-            match read_puzzle_input(selector) {
-                Ok(value) => println!("{}", value),
-                Err(e) => eprintln!(
-                    "error getting input, try `advent get {} {}`\n{:?}",
-                    year, day, e
-                ),
-            }
+            set_cookie(cookie, true)?;
         }
-        ("submit", Some(sub_m)) => {
-            let year = sub_m.value_of("year").unwrap().parse::<u16>()?;
-            let day = sub_m.value_of("day").unwrap().parse::<u16>()?;
-            let level = sub_m.value_of("level").unwrap_or("1").parse::<u16>()?;
-
-            let answer = sub_m.value_of("answer").unwrap();
-
-            let selector = Selector { year, day };
-            let v = fetch::submit_answer(selector, level, answer.to_string())?;
-            dbg!(v);
-        }
-        ("cookie", Some(sub_m)) => {
-            let cookie = prompt_password_stdout("advent of code cookie header (session=....): ")?;
-            let force: bool = sub_m.is_present("force");
-
-            set_cookie(cookie, force)?;
-        }
-        (_, _) => {}
-    };
-
-    // dbg!(matches);
+    }
 
     Ok(())
 }
