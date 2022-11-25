@@ -16,9 +16,16 @@ struct Cli {
 
 #[derive(Subcommand, Debug)]
 enum Command {
+    /// Get a specific day's input
     Get { year: usize, day: usize },
+
+    /// Get the inputs for all of a year
     GetYear { year: usize },
+
+    /// Show the input for a specific day
     Show { year: usize, day: usize },
+
+    /// Set your adventofcode.com cookie
     SetCookie { cookie: Option<String> },
 }
 
