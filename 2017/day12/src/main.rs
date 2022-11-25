@@ -37,7 +37,7 @@ fn main() {
         .unwrap();
 
     println!("part_1 => {}", nodes_with_zero);
-    println!("part_2 => {}", "not done");
+    println!("part_2 => {}", scc.len());
 }
 
 #[cfg(test)]
