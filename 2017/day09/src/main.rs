@@ -1,18 +1,31 @@
 use std::collections::{HashMap, HashSet};
 
 use advent::input_store;
+use itertools::Itertools;
 use regex::Regex;
 
 fn clean_garbage(input: &str) -> String {
-    // dbg!(&input);
     let ignore = Regex::new("!.").unwrap();
     let input = ignore.replace_all(input, "");
-    // dbg!(&input);
+
     let garbage = Regex::new("<.*?>").unwrap();
     let input = garbage.replace_all(&input, "");
-    // dbg!(&input);
 
     input.to_string()
+}
+
+fn collect_garbage(input: &str) -> String {
+    let ignore = Regex::new("!.").unwrap();
+    let input = ignore.replace_all(input, "");
+
+    let garbage = Regex::new("<(.*?)>").unwrap();
+
+    let captures: Vec<String> = garbage
+        .captures_iter(&input)
+        .map(|m| m.get(1).unwrap().as_str().to_string())
+        .collect();
+
+    captures.join("")
 }
 
 fn score(input: &str) -> usize {
@@ -35,10 +48,8 @@ fn score(input: &str) -> usize {
 fn main() {
     let input = input_store::get_input(2017, 09);
 
-    let cleaned = clean_garbage(input.trim());
-
-    println!("part_1 => {}", score(&cleaned));
-    println!("part_2 => {}", "not done");
+    println!("part_1 => {}", score(&clean_garbage(input.trim())));
+    println!("part_2 => {}", collect_garbage(input.trim()).len());
 }
 
 #[cfg(test)]
@@ -79,8 +90,17 @@ mod test {
     }
 
     #[rstest]
-    #[case("ADVENT", "ADVENT")]
-    fn p2_tests(#[case] given: &str, #[case] expected: &str) {
-        assert_eq!(given, expected);
+    #[case("<>", 0)]
+    #[case("<random characters>", 17)]
+    #[case("<<<<>", 3)]
+    #[case("<{!>}>", 2)]
+    #[case("<!!>", 0)]
+    #[case("<!!!>>", 0)]
+    #[case(r#"<{o"i!a,<{i<a>"#, 10)]
+    fn p2_tests(#[case] given: &str, #[case] expected: usize) {
+        let collected = collect_garbage(given);
+
+        println!("{}, {}", given, collected);
+        assert_eq!(collected.len(), expected);
     }
 }
