@@ -40,6 +40,19 @@ print(read_aoc_input(2017, 1))
 ```
 
 
+in rust you can use the advent crate directly
+
+`cargo add advent --git https://github.com/kryptn/advent-rs --features=fetch,parse`
+
+```rust
+use advent::input_store;
+
+fn main() {
+    let input = input_store::get_input(2017, 1);
+    println!(input)
+}
+```
+
 
 # other tools
 
