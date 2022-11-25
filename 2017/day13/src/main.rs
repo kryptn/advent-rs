@@ -47,11 +47,11 @@ fn main() {
         .map(|line: Vec<usize>| (line[0], line[1]))
         .collect();
 
-    let (sev, _) = check_scanners(&scanners, 0, 0);
+    let (sev, _) = check_scanners(&scanners, 0);
     println!("part_1 => {}", sev);
 
     for delay in 0.. {
-        let (_, caught) = check_scanners(&scanners, delay, 1);
+        let (_, caught) = check_scanners(&scanners, delay);
         if !caught {
             println!("part_2 => {}", delay);
             break;
