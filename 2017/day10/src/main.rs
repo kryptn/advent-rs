@@ -19,28 +19,10 @@ fn main() {
 
     println!("part_1 => {}", hashed[0] * hashed[1]);
 
-    let lengths: Vec<usize> = input
-        .trim()
-        .as_bytes()
-        .iter()
-        .cloned()
-        .map(|b| b.into())
-        .chain(vec![17, 31, 73, 47, 23])
-        .collect();
-    let mut hasher = KnotHasher::new(256, lengths);
-    for _ in 0..64 {
-        hasher.next();
-    }
+    let mut hasher = KnotHasher::new_from_str(256, &input);
+    hasher.round();
 
-    let dense_hash: Vec<usize> = hasher
-        .ring
-        .chunks(16)
-        .map(|ch| ch.iter().cloned().reduce(|a, b| a ^ b).unwrap())
-        .collect();
-
-    let hex_string = dense_hash.iter().map(|ch| format!("{:02x}", ch)).join("");
-
-    println!("part_2 => {}", hex_string);
+    println!("part_2 => {}", hasher.as_hex_str());
 }
 
 #[cfg(test)]
