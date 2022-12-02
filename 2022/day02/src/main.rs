@@ -16,6 +16,19 @@ impl Hand {
             Hand::Scissors => 3,
         }
     }
+    fn for_condition(&self, condition: &Condition) -> Self {
+        match (self, condition) {
+            (Hand::Rock, Condition::Lose) => Self::Scissors,
+            (Hand::Rock, Condition::Draw) => Self::Rock,
+            (Hand::Rock, Condition::Win) => Self::Paper,
+            (Hand::Paper, Condition::Lose) => Self::Rock,
+            (Hand::Paper, Condition::Draw) => Self::Paper,
+            (Hand::Paper, Condition::Win) => Self::Scissors,
+            (Hand::Scissors, Condition::Lose) => Self::Paper,
+            (Hand::Scissors, Condition::Draw) => Self::Scissors,
+            (Hand::Scissors, Condition::Win) => Self::Rock,
+        }
+    }
 }
 
 impl From<&str> for Hand {
@@ -25,6 +38,23 @@ impl From<&str> for Hand {
             "B" | "Y" => Self::Paper,
             "C" | "Z" => Self::Scissors,
             _ => panic!(),
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+enum Condition {
+    Lose,
+    Draw,
+    Win,
+}
+
+impl From<&Hand> for Condition {
+    fn from(hand: &Hand) -> Self {
+        match hand {
+            Hand::Rock => Self::Lose,
+            Hand::Paper => Self::Draw,
+            Hand::Scissors => Self::Win,
         }
     }
 }
@@ -84,12 +114,22 @@ fn main() {
         (them, me)
     };
 
-    let part_1: u32 = zip_eq(them, me)
-        .map(|(t, m)| Match::from((t, m)).resolve())
+    let part_1: u32 = zip_eq(&them, &me)
+        .map(|(t, m)| Match::from((*t, *m)).resolve())
         .sum();
 
     println!("part_1 => {}", part_1);
-    println!("part_2 => {}", "not done");
+
+    let conditions: Vec<Condition> = me.iter().map(Condition::from).collect();
+
+    let part_2: u32 = zip_eq(&them, &conditions)
+        .map(|(t, c)| {
+            let m = t.for_condition(c);
+            Match::from((*t, m)).resolve()
+        })
+        .sum();
+
+    println!("part_2 => {}", part_2);
 }
 
 #[cfg(test)]
