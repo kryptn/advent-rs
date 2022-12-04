@@ -21,7 +21,6 @@ fn main() {
             let left: HashSet<char> = left.chars().collect();
             let right: HashSet<char> = right.chars().collect();
             let common = left.intersection(&right).into_iter().next().unwrap();
-            // dbg!(common);
             priorities[common]
         })
         .sum();
