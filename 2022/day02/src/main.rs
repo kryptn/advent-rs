@@ -1,27 +1,5 @@
 use advent::input_store;
 use advent_toolbox::rps::{Condition, Hand};
-use itertools::zip_eq;
-
-fn to_hand(this: &str) -> Hand {
-    let normalized = this
-        .to_lowercase()
-        .replace("x", "rock")
-        .replace("y", "paper")
-        .replace("z", "scissors")
-        .replace("a", "rock")
-        .replace("b", "paper")
-        .replace("c", "scissors");
-    normalized.as_str().into()
-}
-
-fn to_condition(this: &str) -> Condition {
-    let normalized = this
-        .to_lowercase()
-        .replace("x", "lose")
-        .replace("y", "draw")
-        .replace("z", "win");
-    normalized.as_str().into()
-}
 
 fn parse<'a, T, U>(line: &'a str) -> (T, U)
 where
@@ -30,18 +8,6 @@ where
 {
     let items: Vec<&str> = line.trim().split_whitespace().collect();
     (items[0].into(), items[1].into())
-}
-
-fn unzip<T, U>(items: Vec<(T, U)>) -> (Vec<T>, Vec<U>) {
-    let mut a_vec = Vec::new();
-    let mut b_vec = Vec::new();
-
-    for (a, b) in items {
-        a_vec.push(a);
-        b_vec.push(b);
-    }
-
-    (a_vec, b_vec)
 }
 
 fn points_for_hand(hand: &Hand) -> u32 {
@@ -67,7 +33,7 @@ fn main() {
     let part_1: u32 = items
         .iter()
         .map(|(them, me)| {
-            let cond = me.against(them);
+            let cond = them.against(me);
             points_for_condition(&cond) + points_for_hand(&me)
         })
         .sum();
@@ -83,7 +49,6 @@ fn main() {
         .sum();
     println!("part_2 => {}", part_2);
 }
-
 
 #[cfg(test)]
 mod test {

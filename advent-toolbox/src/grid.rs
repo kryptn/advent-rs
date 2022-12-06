@@ -1,23 +1,9 @@
 use std::ops::Add;
 
+trait Point {}
 
+trait Space {}
 
-trait Point {
+struct Coordinate {}
 
-}
-
-
-
-trait Space {
-
-
-}
-
-
-struct Coordinate {
-
-}
-
-impl Point for Coordinate {
-
-}
+impl Point for Coordinate {}

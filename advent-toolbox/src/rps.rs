@@ -1,5 +1,3 @@
-
-
 pub enum Hand {
     Rock,
     Paper,
@@ -8,13 +6,10 @@ pub enum Hand {
 
 impl From<&str> for Hand {
     fn from(input: &str) -> Self {
-
-        dbg!(&input);
-
         match input.to_lowercase().trim() {
-            "r" | "rock" => Self::Rock,
-            "p" | "paper" => Self::Paper,
-            "s" | "scissors" => Self::Scissors,
+            "r" | "rock" | "a" | "x" => Self::Rock,
+            "p" | "paper" | "b" | "y" => Self::Paper,
+            "s" | "scissors" | "c" | "z" => Self::Scissors,
             _ => panic!("expected r[ock], p[aper], or s[cissors]"),
         }
     }
@@ -23,15 +18,15 @@ impl From<&str> for Hand {
 impl Hand {
     pub fn against(&self, other: &Hand) -> Condition {
         match (self, other) {
-            (Hand::Rock, Hand::Rock) =>  Condition::Draw,
-            (Hand::Rock, Hand::Paper) =>  Condition::Win,
-            (Hand::Rock, Hand::Scissors) =>  Condition::Lose,
-            (Hand::Paper, Hand::Rock) =>  Condition::Lose,
-            (Hand::Paper, Hand::Paper) =>  Condition::Draw,
-            (Hand::Paper, Hand::Scissors) =>  Condition::Win,
-            (Hand::Scissors, Hand::Rock) =>  Condition::Win,
-            (Hand::Scissors, Hand::Paper) =>  Condition::Lose,
-            (Hand::Scissors, Hand::Scissors) =>  Condition::Draw,
+            (Hand::Rock, Hand::Rock) => Condition::Draw,
+            (Hand::Rock, Hand::Paper) => Condition::Win,
+            (Hand::Rock, Hand::Scissors) => Condition::Lose,
+            (Hand::Paper, Hand::Rock) => Condition::Lose,
+            (Hand::Paper, Hand::Paper) => Condition::Draw,
+            (Hand::Paper, Hand::Scissors) => Condition::Win,
+            (Hand::Scissors, Hand::Rock) => Condition::Win,
+            (Hand::Scissors, Hand::Paper) => Condition::Lose,
+            (Hand::Scissors, Hand::Scissors) => Condition::Draw,
         }
     }
 
@@ -59,15 +54,13 @@ pub enum Condition {
 impl From<&str> for Condition {
     fn from(input: &str) -> Self {
         match input.to_lowercase().trim() {
-            "l" | "lose" => Self::Lose,
-            "d" | "draw" => Self::Draw,
-            "w" | "win" => Self::Win,
-            _ => panic!("expected l[ose], d[raw], or w[win]")
+            "l" | "lose" | "x" => Self::Lose,
+            "d" | "draw" | "y" => Self::Draw,
+            "w" | "win" | "z" => Self::Win,
+            _ => panic!("expected l[ose], d[raw], or w[win]"),
         }
     }
 }
 
 #[cfg(test)]
-mod test {
-
-}
+mod test {}
