@@ -43,7 +43,7 @@ impl KnotHasher {
             .cloned()
             .map(|b| b.into())
             .collect();
-            lengths.extend(vec![17, 31, 73, 47, 23]);
+        lengths.extend(vec![17, 31, 73, 47, 23]);
         Self::new(ring_size, lengths)
     }
 
