@@ -1,25 +1,27 @@
 use std::collections::HashSet;
 
 use advent::input_store;
-use itertools::Itertools;
+
+fn unique_windows(input: &str, window: usize) -> Option<usize> {
+    for i in 0..input.len() - window {
+        let set: HashSet<char> = input[i..i + window].chars().collect();
+        if set.len() == window {
+            return Some(i + window);
+        }
+    }
+    None
+}
 
 fn main() {
     let input = input_store::get_input(2022, 06);
 
-    for (i, (a, b, c, d)) in input.chars().tuple_windows().enumerate() {
-        let set: HashSet<char> = vec![a, b, c, d].iter().cloned().collect();
-        if set.len() == 4 {
-            println!("part_1 => {}", i + 4);
-            break;
-        }
-    }
-
-    println!("part_2 => {}", "not done");
+    println!("part_1 => {}", unique_windows(&input, 4).unwrap());
+    println!("part_2 => {}", unique_windows(&input, 14).unwrap());
 }
 
 #[cfg(test)]
 mod test {
-    use super::*;
+
     use rstest::*;
 
     #[test]
