@@ -82,10 +82,15 @@ impl Filesystem {
         self.files
             .iter()
             .filter(|(pf, _)| {
-                let candidate = format!("{}/", prefix);
+                let candidate = if prefix == "/" {
+                    prefix.clone()
+                } else {
+                    format!("{}/", prefix)
+                };
+
                 pf.starts_with(&candidate)
             })
-            .map(|(pf, obj)| {
+            .map(|(_, obj)| {
                 // println!("checked {:?} with {:?}", pf, prefix);
                 match obj {
                     Object::File { name: _, size } => size.clone(),
@@ -101,7 +106,7 @@ impl Filesystem {
             let indent = {
                 let mut out = "".to_string();
                 if item.0.len() > 1 {
-                    for i in 0..slashes {
+                    for _ in 0..slashes {
                         out += "|  ";
                     }
                 }
@@ -192,33 +197,36 @@ fn main() {
 
     // dbg!(&fs);
 
-    // fs.show();
+    fs.show();
 
-    let mut part_1 = 0;
+    let dir_sizes: Vec<(String, usize)> = fs
+        .files
+        .iter()
+        .filter_map(|(pf, obj)| match obj {
+            Object::Directory { name: _ } => Some((pf.clone(), fs.du(pf.clone()))),
+            _ => None,
+        })
+        .sorted_by(|lhs, rhs| lhs.1.cmp(&rhs.1))
+        .collect();
 
-    for (prefix, obj) in fs.files.iter().sorted_by(|lhs, rhs| lhs.0.cmp(rhs.0)) {
-        match obj {
-            Object::Directory { name } => {
-                let du = fs.du(prefix.clone());
-
-                // print!("prefix: {}, size: {}", prefix, du);
-                if du <= 100000 {
-                    // dbg!(prefix, obj, &du);
-                    // println!("\n\n");
-                    part_1 += du;
-                    // println!("< ---------")
-                } else {
-                    // println!("")
-                }
-            }
-            Object::File { name, size } => {
-                // println!("file  : {}, size: {}", prefix, size);
-            }
-        }
-    }
+    let part_1: usize = dir_sizes
+        .iter()
+        .filter(|(_, size)| *size <= 100000)
+        .map(|a| a.1)
+        .sum();
 
     println!("part_1 => {}", part_1);
-    println!("part_2 => {}", "not done");
+
+    let total = 70000000;
+    let needed = 30000000;
+    let usage = dir_sizes[dir_sizes.len() - 1].1;
+    let available = total - usage;
+
+    let cleanup: Vec<_> = dir_sizes
+        .iter()
+        .filter(|(_, size)| available + size > needed)
+        .collect();
+    println!("part_2 => {}", cleanup.first().unwrap().1);
 }
 
 #[cfg(test)]
