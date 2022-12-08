@@ -89,6 +89,30 @@ impl Forest {
             }
         }
     }
+
+    fn visible_from(&self, from: Coordinate, dir: RelativeDirection) -> u32 {
+        let this_height = self.trees.get(&from).unwrap();
+        let mut visible = 0;
+        for coord in self.line_from(from + dir.into(), dir) {
+            let tree_height = self.trees.get(&coord).unwrap();
+            visible += 1;
+
+            if tree_height >= this_height {
+                break;
+            }
+        }
+
+        visible
+    }
+
+    fn scenic_score(&self, from: Coordinate) -> u32 {
+        let left = self.visible_from(from, RelativeDirection::Left);
+        let right = self.visible_from(from, RelativeDirection::Right);
+        let up = self.visible_from(from, RelativeDirection::Up);
+        let down = self.visible_from(from, RelativeDirection::Down);
+
+        left * right * up * down
+    }
 }
 
 impl From<HashMap<Coordinate, i32>> for Forest {
@@ -144,7 +168,15 @@ fn main() {
     // }
 
     println!("part_1 => {}", forest.visible.len());
-    println!("part_2 => {}", "not done");
+
+    let scenics: Grid<u32> = forest
+        .trees
+        .keys()
+        .map(|&c| (c, forest.scenic_score(c)))
+        .collect();
+    // print_grid(&scenics);
+
+    println!("part_2 => {}", scenics.values().max().unwrap());
 }
 
 #[cfg(test)]

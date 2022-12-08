@@ -207,11 +207,19 @@ impl From<(i32, i32)> for Coordinate {
     }
 }
 
+impl From<(usize, usize)> for Coordinate {
+    fn from((x, y): (usize, usize)) -> Self {
+        let x = x as i32;
+        let y = y as i32;
+        (x, y).into()
+    }
+}
+
 impl From<&str> for Coordinate {
     fn from(input: &str) -> Self {
         let mut input_split = input.trim().split(",");
-        let x = input_split.next().unwrap().parse().unwrap();
-        let y = input_split.next().unwrap().parse().unwrap();
+        let x: i32 = input_split.next().unwrap().parse().unwrap();
+        let y: i32 = input_split.next().unwrap().parse().unwrap();
         (x, y).into()
     }
 }
