@@ -1,9 +1,10 @@
 use std::collections::HashSet;
 
 use advent::{
-    grid::{print_grid, Coordinate, Grid, RelativeDirection},
+    grid::{manhattan, Coordinate, RelativeDirection},
     input_store,
 };
+use itertools::Itertools;
 
 #[derive(Clone, Debug)]
 struct Rope(Vec<Coordinate>);
@@ -18,25 +19,19 @@ fn tail_pos(head: Coordinate, tail: Coordinate) -> Coordinate {
     if head == tail || head.neighbors().contains(&tail) {
         tail
     } else {
-        let head_ortho_neighbors: HashSet<_> = head.ortho_neighbors().iter().cloned().collect();
+        let head_neighbors: HashSet<_> = head.neighbors().iter().cloned().collect();
         let tail_neighbors: HashSet<_> = tail.neighbors().iter().cloned().collect();
-        // dbg!(&head, &tail);
-        // dbg!(&head_neighbors, &tail_neighbors);
-        let itx = match head_ortho_neighbors.intersection(&tail_neighbors).next() {
-            Some(itx) => itx.clone(),
-            None => {
-                let head_neighbors: HashSet<_> = head.neighbors().iter().cloned().collect();
-                head_neighbors
-                    .intersection(&tail_neighbors)
-                    .next()
-                    .unwrap()
-                    .clone()
-            }
-        };
-        // dbg!(&itx);
-        // println!("\n\n\n");
+        let nt = head_neighbors
+            .intersection(&tail_neighbors)
+            .sorted_by(|lhs, rhs| {
+                let lhsm = manhattan(head, **lhs);
+                let rhsm = manhattan(head, **rhs);
+                lhsm.cmp(&rhsm)
+            })
+            .next()
+            .unwrap();
 
-        itx
+        *nt
     }
 }
 
@@ -51,23 +46,15 @@ impl Rope {
     }
 
     fn step(&self, direction: RelativeDirection) -> Self {
-        // println!("\n\n\n");
-        // dbg!(self, direction);
-
         let head = self.0[0];
         let head = head + direction.into();
 
-        // println!("moved head from {} to {}", self.0[0], head);
-
         let mut next = vec![head];
 
-        for (idx, knot) in self.0[1..].iter().enumerate() {
+        for knot in self.0[1..].iter() {
             let prev = next[next.len() - 1];
-            // println!("comparing idx {}\nhead: {:?}\ntail:{:?}\n", idx+1, prev, knot);
             next.push(tail_pos(prev, *knot))
         }
-
-        // dbg!(&out);
 
         Self(next)
     }
@@ -75,6 +62,17 @@ impl Rope {
     fn tail(&self) -> Coordinate {
         self.0[self.0.len() - 1]
     }
+}
+
+fn visited_with_knots(knots: usize, directions: &Vec<RelativeDirection>) -> usize {
+    let mut rope = Rope::new_with_knots(knots);
+    let mut states = vec![rope.clone()];
+    for direction in directions {
+        rope = rope.step(*direction);
+        states.push(rope.clone())
+    }
+    let visited: HashSet<Coordinate> = states.iter().map(|r| r.tail()).collect();
+    visited.len()
 }
 
 fn main() {
@@ -110,39 +108,13 @@ fn main() {
         .flatten()
         .collect();
 
-    // dbg!(&directions);
-
-    // let mut rope = Rope(vec![(0, 0).into(), (0, 0).into()]);
-
-    let mut rope = Rope::new_with_knots(2);
-    let mut states = vec![rope.clone()];
-    for direction in &directions {
-        rope = rope.step(*direction);
-        states.push(rope.clone())
-    }
-    let visited: HashSet<Coordinate> = states.iter().map(|r| r.tail()).collect();
-
-    // let grid: Grid<i32> = visited.iter().map(|&c| (c, 1)).collect();
-    // print_grid(&grid);
-
-    println!("part_1 => {}", visited.len());
-
-    let mut rope = Rope::new_with_knots(10);
-    let mut states = vec![rope.clone()];
-    for direction in &directions {
-        // println!("\n\n\n\nmoving {:?} --------------------------------\n", direction);
-        // let g: Grid<usize> = rope.0.iter().enumerate().map(|(i, &c)| (c, i)).collect();
-        // print_grid(&g);
-        rope = rope.step(*direction);
-        states.push(rope.clone())
-    }
-    let visited: HashSet<Coordinate> = states.iter().map(|r| r.tail()).collect();
-    println!("part_2 => {}", visited.len());
+    println!("part_1 => {}", visited_with_knots(2, &directions));
+    println!("part_2 => {}", visited_with_knots(10, &directions));
 }
 
 #[cfg(test)]
 mod test {
-    use super::*;
+
     use rstest::*;
 
     #[test]
