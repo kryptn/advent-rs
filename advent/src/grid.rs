@@ -82,6 +82,17 @@ pub enum RelativeDirection {
     Left,
 }
 
+impl RelativeDirection {
+    pub fn other(&self) -> Self {
+        match self {
+            RelativeDirection::Up => RelativeDirection::Down,
+            RelativeDirection::Right => RelativeDirection::Left,
+            RelativeDirection::Down => RelativeDirection::Up,
+            RelativeDirection::Left => RelativeDirection::Right,
+        }
+    }
+}
+
 impl FromStr for RelativeDirection {
     type Err = anyhow::Error;
 
