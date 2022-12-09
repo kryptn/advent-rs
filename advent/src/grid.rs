@@ -91,6 +91,10 @@ impl RelativeDirection {
             RelativeDirection::Left => RelativeDirection::Right,
         }
     }
+
+    pub fn each() -> [Self; 4] {
+        [Self::Up, Self::Right, Self::Down, Self::Left]
+    }
 }
 
 impl FromStr for RelativeDirection {
@@ -150,6 +154,15 @@ impl Coordinate {
             Coordinate::new(self.x - 1, self.y + 1),
             Coordinate::new(self.x, self.y + 1),
             Coordinate::new(self.x + 1, self.y + 1),
+        ]
+    }
+
+    pub fn ortho_neighbors(&self) -> Vec<Self> {
+        vec![
+            Coordinate::new(self.x, self.y - 1),
+            Coordinate::new(self.x - 1, self.y),
+            Coordinate::new(self.x + 1, self.y),
+            Coordinate::new(self.x, self.y + 1),
         ]
     }
 
