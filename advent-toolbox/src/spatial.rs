@@ -47,7 +47,7 @@ impl Add<Coordinate> for Coordinate {
     }
 }
 
-macro_rules! coord {
+macro_rules! coord_from {
     ( $x:ty ) => {
         impl From<($x, $x)> for Coordinate {
             fn from((x, y): ($x, $x)) -> Self {
@@ -59,10 +59,10 @@ macro_rules! coord {
     };
 }
 
-coord!(usize);
-coord!(isize);
-coord!(u32);
-coord!(i32);
+coord_from!(usize);
+coord_from!(isize);
+coord_from!(u32);
+coord_from!(i32);
 
 impl Point for Coordinate {}
 
