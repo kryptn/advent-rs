@@ -29,7 +29,6 @@ impl Operation {
 impl From<&str> for Operation {
     fn from(line: &str) -> Self {
         let split: Vec<_> = line.trim().split_whitespace().collect();
-        dbg!(&split);
         let operand = match split[5].parse() {
             Ok(v) => v,
             Err(_) => return Self::Exponent(2),
@@ -108,6 +107,7 @@ struct Monkey {
     number: usize,
     items: VecDeque<i64>,
     operation: Operation,
+    post_inspection: Operation,
     test: Test,
 
     inspections: usize,
@@ -117,7 +117,8 @@ impl Monkey {
     fn inspect(&mut self) -> (usize, i64) {
         let worry = self.items.pop_front().unwrap();
         let worry = self.operation.apply(worry);
-        let worry = worry / 3;
+
+        let worry = self.post_inspection.apply(worry);
 
         let target = self.test.check(worry);
 
@@ -151,6 +152,8 @@ impl From<&str> for Monkey {
 
         let operation = lines.next().unwrap().into();
 
+        let post_inspection = Operation::Divide(3);
+
         let test = {
             let remaining: Vec<&str> = lines.collect();
             let t = remaining.join("\n");
@@ -163,6 +166,7 @@ impl From<&str> for Monkey {
             number,
             items,
             operation,
+            post_inspection,
             test,
             inspections,
         }
@@ -218,6 +222,34 @@ impl Monkeys {
             self.round();
         }
     }
+
+    fn business(&self) -> usize {
+        let inspections: Vec<usize> = self
+            .0
+            .iter()
+            .map(|m| m.inspections)
+            .sorted()
+            .rev()
+            .collect();
+
+        inspections[0] * inspections[1]
+    }
+
+    fn get_test_value(&self) -> Vec<i64> {
+        self.0
+            .iter()
+            .map(|m| match m.test.oper {
+                Operation::Modulus(operand) => operand,
+                _ => panic!(),
+            })
+            .collect()
+    }
+
+    fn set_post_inspection_operation(&mut self, oper: Operation) {
+        for monkey in self.0.iter_mut() {
+            monkey.post_inspection = oper.clone()
+        }
+    }
 }
 
 impl std::fmt::Display for Monkeys {
@@ -229,48 +261,27 @@ impl std::fmt::Display for Monkeys {
 
 fn main() {
     let input = input_store::get_input(2022, 11);
-    //     let input = r#"Monkey 0:
-    //     Starting items: 79, 98
-    //     Operation: new = old * 19
-    //     Test: divisible by 23
-    //       If true: throw to monkey 2
-    //       If false: throw to monkey 3
 
-    //   Monkey 1:
-    //     Starting items: 54, 65, 75, 74
-    //     Operation: new = old + 6
-    //     Test: divisible by 19
-    //       If true: throw to monkey 2
-    //       If false: throw to monkey 0
-
-    //   Monkey 2:
-    //     Starting items: 79, 60, 97
-    //     Operation: new = old * old
-    //     Test: divisible by 13
-    //       If true: throw to monkey 1
-    //       If false: throw to monkey 3
-
-    //   Monkey 3:
-    //     Starting items: 74
-    //     Operation: new = old + 3
-    //     Test: divisible by 17
-    //       If true: throw to monkey 0
-    //       If false: throw to monkey 1"#;
+    let mut monkeys: Monkeys = input.as_str().into();
+    monkeys.rounds(20);
+    println!("part_1 => {}", monkeys.business());
 
     let mut monkeys: Monkeys = input.as_str().into();
 
-    monkeys.rounds(20);
+    let increased_worry = Operation::Modulus(
+        monkeys
+            .get_test_value()
+            .iter()
+            .cloned()
+            .reduce(|a, b| a * b)
+            .unwrap(),
+    );
 
-    let inspections: Vec<usize> = monkeys
-        .0
-        .iter()
-        .map(|m| m.inspections)
-        .sorted()
-        .rev()
-        .collect();
+    monkeys.set_post_inspection_operation(increased_worry);
 
-    println!("part_1 => {}", inspections[0] * inspections[1]);
-    println!("part_2 => {}", "not done");
+    monkeys.rounds(10000);
+
+    println!("part_2 => {}", monkeys.business());
 }
 
 #[cfg(test)]
