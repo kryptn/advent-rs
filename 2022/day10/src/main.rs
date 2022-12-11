@@ -24,7 +24,7 @@ impl State {
     }
 
     fn apply(&self, inst: Instruction) -> Self {
-        println!("applying {:?} to {:?}", inst, self);
+        // println!("applying {:?} to {:?}", inst, self);
         let mut next = self.clone();
         next.cycles += 1;
         next.strength = next.x * next.cycles;
@@ -238,7 +238,7 @@ fn main() {
         states.push(state.clone());
     }
 
-    dbg!(&states);
+    // dbg!(&states);
 
     let p1: i32 = (20..240)
         .step_by(40)
@@ -254,7 +254,7 @@ fn main() {
             let y = (idx) / 40;
             let x = (idx % 40);
             let rendered = ((x + 1) as i32 - state.x).abs() <= 1;
-            println!("cycle: {}, sprint center: {}", idx, state.x);
+            // println!("cycle: {}, sprint center: {}", idx, state.x);
             ((x, y).into(), BooleanCell::from(rendered))
         })
         // .filter(|(_, r)| r.0)
