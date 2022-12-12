@@ -194,7 +194,7 @@ fn main() {
     let part_2 = terrain
         .terrain
         .iter()
-        .filter(|(_, h)| h.0 == 0)
+        .filter(|(c, h)| h.0 == 0 && (c.x == 0 || c.x == 2))
         .map(|(&c, _)| terrain.shortest_distance(c, terrain.end))
         .filter_map(|v| v)
         .min()
