@@ -235,7 +235,7 @@ impl Monkeys {
         inspections[0] * inspections[1]
     }
 
-    fn get_test_value(&self) -> Vec<i64> {
+    fn get_test_values(&self) -> Vec<i64> {
         self.0
             .iter()
             .map(|m| match m.test.oper {
@@ -270,9 +270,8 @@ fn main() {
 
     let increased_worry = Operation::Modulus(
         monkeys
-            .get_test_value()
-            .iter()
-            .cloned()
+            .get_test_values()
+            .into_iter()
             .reduce(|a, b| a * b)
             .unwrap(),
     );

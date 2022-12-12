@@ -1,9 +1,9 @@
 use std::{collections::HashMap, hash::Hash, ops::Add};
 
-trait Point {}
+pub trait Point {}
 
 #[derive(Debug)]
-struct Space<P, T>(HashMap<P, T>)
+pub struct Space<P, T>(HashMap<P, T>)
 where
     P: Point;
 
@@ -27,14 +27,34 @@ impl<P: Point, T> Space<P, T> {
     }
 }
 
+// impl <P: Point, T: std::fmt::Display + Default> Space<P, T> {
+//     pub fn print_grid(&self)
+
+//     {
+//     let (lower, upper) = bounding_box(&g);
+
+//     for row in iter_rows(lower, upper) {
+//         for coord in row {
+//             let item = match g.get(&coord) {
+//                 Some(i) => i.clone(),
+//                 None => T::default(),
+//             };
+//             print!("{}", item);
+//         }
+//         print!("\n");
+//     }
+//     println!("");
+// }
+// }
+
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
-struct Coordinate {
-    x: i32,
-    y: i32,
+pub struct Coordinate {
+    pub x: i32,
+    pub y: i32,
 }
 
 impl Coordinate {
-    fn new(x: i32, y: i32) -> Self {
+    pub fn new(x: i32, y: i32) -> Self {
         Self { x, y }
     }
 }

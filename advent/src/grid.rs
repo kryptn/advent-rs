@@ -558,6 +558,22 @@ where
     Ok(out)
 }
 
+pub fn from_str<T>(input: &str) -> Result<Grid<T>>
+where
+    T: From<char> + Default,
+{
+    let mut out = Grid::new();
+
+    for (y, line) in input.trim().lines().enumerate() {
+        for (x, value) in line.trim().chars().enumerate() {
+            let value = value.into();
+            out.insert((x as i32, y as i32).into(), value);
+        }
+    }
+
+    Ok(out)
+}
+
 struct NewGrid<T>(HashMap<Coordinate, T>);
 
 impl<T> std::ops::Deref for NewGrid<T> {
