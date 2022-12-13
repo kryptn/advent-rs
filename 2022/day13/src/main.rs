@@ -1,13 +1,7 @@
-use std::convert::TryFrom;
-
 use advent::input_store;
 use itertools::Itertools;
 use nom::{
-    branch::alt,
-    bytes::complete::tag,
-    character::complete::u32,
-    combinator::{opt, peek},
-    multi::many0,
+    branch::alt, bytes::complete::tag, character::complete::u32, combinator::opt, multi::many0,
     IResult,
 };
 
@@ -163,7 +157,7 @@ fn main() {
 
 #[cfg(test)]
 mod test {
-    use super::*;
+
     use rstest::*;
 
     #[test]
