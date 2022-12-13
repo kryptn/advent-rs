@@ -7,9 +7,7 @@ use advent::{
 
 use lazy_static::lazy_static;
 use petgraph::{
-    algo::astar,
-    prelude::{DiGraph, UnGraph},
-    stable_graph::node_index,
+    algo::astar, prelude::DiGraph, stable_graph::node_index,
 };
 
 lazy_static! {
@@ -46,12 +44,6 @@ impl std::fmt::Display for Height {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", LETTER_HEIGHT_MAP[&self.0])
     }
-}
-
-fn one_step(a: u32, b: u32) -> bool {
-    let v = if a > b { a - b } else { b - a };
-
-    v <= 1
 }
 
 fn valid_step(a: u32, b: u32) -> bool {
