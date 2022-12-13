@@ -44,14 +44,12 @@ impl Ord for Node {
             (Node::Empty, Node::Empty) => std::cmp::Ordering::Equal,
             (Node::Empty, _) => std::cmp::Ordering::Less,
             (Node::List(_) | Node::Number(_), Node::Empty) => std::cmp::Ordering::Greater,
-
             (Node::List(lhs), Node::Number(rhs)) => {
                 Self::List(lhs.clone()).cmp(&Self::List(vec![Self::Number(*rhs)]))
             }
             (Node::Number(lhs), Node::List(rhs)) => {
                 Self::List(vec![Self::Number(*lhs)]).cmp(&Self::List(rhs.clone()))
             }
-
             (Node::List(lhs), Node::List(rhs)) => lhs.cmp(rhs),
             (Node::Number(lhs), Node::Number(rhs)) => lhs.cmp(rhs),
         };
@@ -60,7 +58,6 @@ impl Ord for Node {
 }
 
 fn parse_node_list(input: &str) -> IResult<&str, Node> {
-    // let input_clone = input.clone();
     let (input, _) = tag("[")(input)?;
     let (input, items) = many0(parse_node)(input)?;
     let (input, _) = tag("]")(input)?;
