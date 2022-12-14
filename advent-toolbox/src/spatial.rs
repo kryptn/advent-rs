@@ -1,4 +1,4 @@
-use std::{collections::HashMap, hash::Hash, ops::Add};
+use std::{collections::HashMap, hash::Hash, ops::Add, str::FromStr};
 
 pub trait Point {}
 
@@ -27,6 +27,33 @@ impl<P: Point, T> Space<P, T> {
     }
 }
 
+pub fn bounding_box<T>(space: &Space<Coordinate, T>) -> (Coordinate, Coordinate) {
+    let mut lower = Coordinate::new(0, 0);
+    let mut upper = Coordinate::new(0, 0);
+
+    for coordinate in space.keys() {
+        if coordinate.x < lower.x {
+            lower.x = coordinate.x;
+        }
+        if coordinate.y < lower.y {
+            lower.y = coordinate.y
+        }
+
+        if coordinate.x > upper.x {
+            upper.x = coordinate.x;
+        }
+        if coordinate.y > upper.y {
+            upper.y = coordinate.y
+        }
+    }
+
+    (lower, upper)
+}
+
+pub trait Traversable<P: Point> {
+    fn connected(&self, start: &P, end: &P) -> bool;
+}
+
 // impl <P: Point, T: std::fmt::Display + Default> Space<P, T> {
 //     pub fn print_grid(&self)
 
@@ -47,7 +74,7 @@ impl<P: Point, T> Space<P, T> {
 // }
 // }
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Clone, Copy, Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Coordinate {
     pub x: i32,
     pub y: i32,
@@ -56,6 +83,26 @@ pub struct Coordinate {
 impl Coordinate {
     pub fn new(x: i32, y: i32) -> Self {
         Self { x, y }
+    }
+
+    pub fn up(&self) -> Self {
+        (self.x, self.y + 1).into()
+    }
+
+    pub fn right(&self) -> Self {
+        (self.x + 1, self.y).into()
+    }
+
+    pub fn down(&self) -> Self {
+        (self.x, self.y - 1).into()
+    }
+
+    pub fn left(&self) -> Self {
+        (self.x - 1, self.y).into()
+    }
+
+    pub fn cardinals(&self) -> [Self; 4] {
+        [self.up(), self.right(), self.down(), self.left()]
     }
 }
 
@@ -96,6 +143,23 @@ where
         let mut map = HashMap::with_hasher(Default::default());
         map.extend(iter);
         Self(map)
+    }
+}
+
+impl<V> From<&str> for Space<Coordinate, V>
+where
+    V: From<char>,
+{
+    fn from(input: &str) -> Self {
+        let mut cells = Vec::new();
+
+        for (y, line) in input.trim().lines().enumerate() {
+            for (x, value) in line.trim().chars().enumerate() {
+                cells.push(((x, y).into(), value.into()))
+            }
+        }
+
+        cells.into_iter().collect()
     }
 }
 

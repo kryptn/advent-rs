@@ -1,14 +1,10 @@
 use std::{collections::HashMap, u32};
 
-use advent::{
-    grid::{bounding_box, Coordinate, Grid},
-    input_store,
-};
+use advent::input_store;
 
+use advent_toolbox::spatial::{bounding_box, Coordinate, Space, Traversable};
 use lazy_static::lazy_static;
-use petgraph::{
-    algo::astar, prelude::DiGraph, stable_graph::node_index,
-};
+use petgraph::{algo::astar, prelude::DiGraph, stable_graph::node_index};
 
 lazy_static! {
     static ref HEIGHT_MAP: HashMap<char, u32> = {
@@ -53,22 +49,29 @@ fn valid_step(a: u32, b: u32) -> bool {
 }
 
 struct Terrain {
-    terrain: Grid<Height>,
+    terrain: Space<Coordinate, Height>,
     start: Coordinate,
     end: Coordinate,
 
     extent: Coordinate,
 }
 
+impl Traversable<Coordinate> for Terrain {
+    fn connected(&self, start: &Coordinate, end: &Coordinate) -> bool {
+        todo!()
+    }
+}
+
 impl From<&str> for Terrain {
     fn from(input: &str) -> Self {
-        let mut terrain = Grid::new();
+        let mut terrain: Space<Coordinate, Height> = input.into();
+
         let mut start: Option<Coordinate> = None;
         let mut end: Option<Coordinate> = None;
 
         for (y, line) in input.trim().lines().enumerate() {
             for (x, value) in line.trim().chars().enumerate() {
-                let c = (x as i32, y as i32).into();
+                let c = (x, y).into();
                 match value {
                     'S' => start = Some(c),
                     'E' => end = Some(c),
