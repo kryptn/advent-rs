@@ -413,24 +413,11 @@ pub fn new_with_size<T: PartialEq + PartialOrd + Default>(x: i32, y: i32) -> Gri
 }
 
 pub fn bounding_box<T>(grid: &Grid<T>) -> (Coordinate, Coordinate) {
-    let mut lower = Coordinate::new(0, 0);
-    let mut upper = Coordinate::new(0, 0);
+    let x_coords: Vec<i32> = grid.keys().map(|c| c.x).sorted().collect();
+    let y_coords: Vec<i32> = grid.keys().map(|c| c.y).sorted().collect();
 
-    for coordinate in grid.keys() {
-        if coordinate.x < lower.x {
-            lower.x = coordinate.x;
-        }
-        if coordinate.y < lower.y {
-            lower.y = coordinate.y
-        }
-
-        if coordinate.x > upper.x {
-            upper.x = coordinate.x;
-        }
-        if coordinate.y > upper.y {
-            upper.y = coordinate.y
-        }
-    }
+    let lower = (x_coords[0], y_coords[0]).into();
+    let upper = (x_coords[x_coords.len()-1], y_coords[y_coords.len()-1]).into();
 
     (lower, upper)
 }

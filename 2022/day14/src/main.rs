@@ -1,5 +1,5 @@
 use advent::{
-    grid::{bounding_box, coordinates_within, Coordinate, Grid},
+    grid::{bounding_box, coordinates_within, print_grid, Coordinate, Grid},
     input_store,
     parsers::parse_coordinate,
 };
@@ -188,6 +188,7 @@ fn main() {
     let mut cave = Cave::from(&input);
 
     while let Some(_) = cave.next() {}
+    // print_grid(&cave.inner);
     println!("part_2 => {}", cave.count_sand());
 }
 
