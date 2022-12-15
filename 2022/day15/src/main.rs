@@ -5,6 +5,7 @@ use advent::{
 };
 use itertools::Itertools;
 use nom::{bytes::complete::tag, combinator::opt, IResult};
+use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 
 fn parse_coordinate(input: &str) -> IResult<&str, Coordinate> {
     let (input, _) = tag("x=")(input)?;
@@ -43,6 +44,11 @@ fn parse_detection(input: &str) -> IResult<&str, Detection> {
     let (input, beacon) = parse_coordinate(input)?;
 
     Ok((input, Detection { sensor, beacon }))
+}
+
+fn detection_ranges_at(detections: &Vec<Detection>, y: i32) -> Vec<(i32, i32)> {
+    let ranges: Vec<_> = detections.iter().filter_map(|d| d.range_at(y)).collect();
+    join_ranges(ranges)
 }
 
 fn part_2(detections: &Vec<Detection>, max: i32) -> Coordinate {
@@ -84,6 +90,7 @@ fn join_ranges(ranges: Vec<(i32, i32)>) -> Vec<(i32, i32)> {
 
 fn main() {
     let input = input_store::get_input(2022, 15);
+    let max_x = 4000000;
 
     let detections: Vec<_> = input
         .trim()
@@ -96,14 +103,32 @@ fn main() {
 
     let ranges: Vec<_> = detections
         .iter()
-        .filter_map(|d| d.range_at(2000000))
+        .filter_map(|d| d.range_at(max_x / 2))
         .collect();
     let joined = join_ranges(ranges);
     let (a, b) = joined.first().unwrap();
     println!("part_1 => {}", (b - a).abs());
 
-    let p2 = part_2(&detections, 4000000);
-    println!("part_2 => {}", (p2.x as u64 * 4000000) + p2.y as u64);
+    let part_2: Coordinate = (0..=max_x)
+        .into_par_iter()
+        .filter_map(|y| {
+            let joined_ranges = detection_ranges_at(&detections, y);
+            if joined_ranges.len() > 1 {
+                let x = joined_ranges.first().unwrap().1 + 1;
+                Some(Coordinate::from((x, y)))
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>()
+        .first()
+        .unwrap()
+        .clone();
+
+    println!(
+        "part_2 => {}",
+        (part_2.x as u64 * 4000000) + part_2.y as u64
+    );
 }
 
 #[cfg(test)]
