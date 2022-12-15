@@ -16,6 +16,15 @@ fn parse_coordinate(input: &str) -> IResult<&str, Coordinate> {
     Ok((input, (x, y).into()))
 }
 
+fn parse_detection(input: &str) -> IResult<&str, Detection> {
+    let (input, _) = tag("Sensor at ")(input)?;
+    let (input, sensor) = parse_coordinate(input)?;
+    let (input, _) = tag("closest beacon is at ")(input)?;
+    let (input, beacon) = parse_coordinate(input)?;
+
+    Ok((input, Detection { sensor, beacon }))
+}
+
 #[derive(Debug)]
 struct Detection {
     sensor: Coordinate,
@@ -37,30 +46,9 @@ impl Detection {
     }
 }
 
-fn parse_detection(input: &str) -> IResult<&str, Detection> {
-    let (input, _) = tag("Sensor at ")(input)?;
-    let (input, sensor) = parse_coordinate(input)?;
-    let (input, _) = tag("closest beacon is at ")(input)?;
-    let (input, beacon) = parse_coordinate(input)?;
-
-    Ok((input, Detection { sensor, beacon }))
-}
-
 fn detection_ranges_at(detections: &Vec<Detection>, y: i32) -> Vec<(i32, i32)> {
     let ranges: Vec<_> = detections.iter().filter_map(|d| d.range_at(y)).collect();
     join_ranges(ranges)
-}
-
-fn part_2(detections: &Vec<Detection>, max: i32) -> Coordinate {
-    for y in 0..=max {
-        let ranges: Vec<_> = detections.iter().filter_map(|d| d.range_at(y)).collect();
-        let joined = join_ranges(ranges);
-        if joined.len() > 1 {
-            let x = joined.first().unwrap().1 + 1;
-            return (x, y).into();
-        }
-    }
-    panic!("we're guaranteed one result")
 }
 
 fn join_ranges(ranges: Vec<(i32, i32)>) -> Vec<(i32, i32)> {
