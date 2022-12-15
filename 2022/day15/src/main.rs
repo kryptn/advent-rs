@@ -45,17 +45,16 @@ fn parse_detection(input: &str) -> IResult<&str, Detection> {
     Ok((input, Detection { sensor, beacon }))
 }
 
-fn part_2(detections: &Vec<Detection>, max: i32) -> Vec<Coordinate> {
-    let mut out = Vec::new();
+fn part_2(detections: &Vec<Detection>, max: i32) -> Coordinate {
     for y in 0..=max {
         let ranges: Vec<_> = detections.iter().filter_map(|d| d.range_at(y)).collect();
         let joined = join_ranges(ranges);
         if joined.len() > 1 {
             let x = joined.first().unwrap().1 + 1;
-            out.push((x, y).into())
+            return (x, y).into();
         }
     }
-    out
+    panic!("we're guaranteed one result")
 }
 
 fn join_ranges(ranges: Vec<(i32, i32)>) -> Vec<(i32, i32)> {
@@ -101,12 +100,9 @@ fn main() {
         .collect();
     let joined = join_ranges(ranges);
     let (a, b) = joined.first().unwrap();
-
     println!("part_1 => {}", (b - a).abs());
 
     let p2 = part_2(&detections, 4000000);
-
-    let p2 = p2.first().unwrap();
     println!("part_2 => {}", (p2.x as u64 * 4000000) + p2.y as u64);
 }
 
