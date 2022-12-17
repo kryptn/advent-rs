@@ -32,12 +32,12 @@ struct Detection {
 }
 
 impl Detection {
-    fn distance(&self) -> usize {
-        manhattan(self.sensor, self.beacon) as usize
+    fn distance(&self) -> i32 {
+        manhattan(self.sensor, self.beacon)
     }
 
     fn range_at(&self, y: i32) -> Option<(i32, i32)> {
-        let delta = self.distance() as i32 - (self.sensor.y - y).abs();
+        let delta = self.distance()  - (self.sensor.y - y).abs();
         if delta < 0 {
             None
         } else {
@@ -80,7 +80,7 @@ fn main() {
     let input = input_store::get_input(2022, 15);
     let max_x = 4000000;
 
-    let detections: Vec<_> = input
+    let detections: Vec<Detection> = input
         .trim()
         .lines()
         .map(|line| {
@@ -89,11 +89,7 @@ fn main() {
         })
         .collect();
 
-    let ranges: Vec<_> = detections
-        .iter()
-        .filter_map(|d| d.range_at(max_x / 2))
-        .collect();
-    let joined = join_ranges(ranges);
+    let joined = detection_ranges_at(&detections, max_x / 2);
     let (a, b) = joined.first().unwrap();
     println!("part_1 => {}", (b - a).abs());
 
