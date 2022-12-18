@@ -1,4 +1,11 @@
-use std::{collections::HashMap, hash::Hash, ops::Add, str::FromStr};
+use std::{
+    collections::{HashMap, HashSet},
+    hash::Hash,
+    ops::{Add, Sub},
+    str::FromStr,
+};
+
+use itertools::Itertools;
 
 pub trait Point {}
 
@@ -22,7 +29,7 @@ impl<P: Point, T> std::ops::DerefMut for Space<P, T> {
 }
 
 impl<P: Point, T> Space<P, T> {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Space(HashMap::new())
     }
 }
@@ -76,12 +83,12 @@ pub trait Traversable<P: Point> {
 
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Coordinate {
-    pub x: i32,
-    pub y: i32,
+    pub x: isize,
+    pub y: isize,
 }
 
 impl Coordinate {
-    pub fn new(x: i32, y: i32) -> Self {
+    pub fn new(x: isize, y: isize) -> Self {
         Self { x, y }
     }
 
@@ -104,6 +111,15 @@ impl Coordinate {
     pub fn cardinals(&self) -> [Self; 4] {
         [self.up(), self.right(), self.down(), self.left()]
     }
+
+    pub fn zip_cardinals(&self) -> [(Self, Self); 4] {
+        [
+            (*self, self.up()),
+            (*self, self.right()),
+            (*self, self.down()),
+            (*self, self.left()),
+        ]
+    }
 }
 
 impl Add<Coordinate> for Coordinate {
@@ -118,8 +134,8 @@ macro_rules! coord_from {
     ( $x:ty ) => {
         impl From<($x, $x)> for Coordinate {
             fn from((x, y): ($x, $x)) -> Self {
-                let x = x as i32;
-                let y = y as i32;
+                let x = x as isize;
+                let y = y as isize;
                 Self { x, y }
             }
         }
@@ -130,10 +146,117 @@ coord_from!(usize);
 coord_from!(isize);
 coord_from!(u32);
 coord_from!(i32);
+coord_from!(u64);
+coord_from!(i64);
 
 impl Point for Coordinate {}
 
-impl Point for (i32, i32) {}
+impl Point for (isize, isize) {}
+
+#[derive(Clone, Copy, Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
+pub struct Coordinate3d {
+    pub x: isize,
+    pub y: isize,
+    pub z: isize,
+}
+
+impl Coordinate3d {
+    pub fn new(x: isize, y: isize, z: isize) -> Self {
+        Self { x, y, z }
+    }
+
+    pub fn right(&self) -> Self {
+        (self.x + 1, self.y, self.z).into()
+    }
+
+    pub fn left(&self) -> Self {
+        (self.x - 1, self.y, self.z).into()
+    }
+
+    pub fn up(&self) -> Self {
+        (self.x, self.y + 1, self.z).into()
+    }
+
+    pub fn down(&self) -> Self {
+        (self.x, self.y - 1, self.z).into()
+    }
+
+    pub fn forward(&self) -> Self {
+        (self.x, self.y, self.z + 1).into()
+    }
+
+    pub fn backward(&self) -> Self {
+        (self.x, self.y, self.z - 1).into()
+    }
+
+    pub fn cardinals(&self) -> [Self; 6] {
+        [
+            self.up(),
+            self.right(),
+            self.down(),
+            self.left(),
+            self.forward(),
+            self.backward(),
+        ]
+    }
+
+    pub fn zip_cardinals(&self) -> [(Self, Self); 6] {
+        [
+            (*self, self.up()),
+            (*self, self.right()),
+            (*self, self.down()),
+            (*self, self.left()),
+            (*self, self.forward()),
+            (*self, self.backward()),
+        ]
+    }
+}
+
+impl std::fmt::Display for Coordinate3d {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({}, {}, {})", self.x, self.y, self.z)
+    }
+}
+
+impl Add<Coordinate3d> for Coordinate3d {
+    type Output = Self;
+
+    fn add(self, rhs: Coordinate3d) -> Self::Output {
+        ((self.x + rhs.x), (self.y + rhs.y), (self.z + rhs.z)).into()
+    }
+}
+
+impl Sub<Coordinate3d> for Coordinate3d {
+    type Output = Self;
+
+    fn sub(self, rhs: Coordinate3d) -> Self::Output {
+        ((self.x - rhs.x), (self.y - rhs.y), (self.z - rhs.z)).into()
+    }
+}
+
+macro_rules! coord3d_from {
+    ( $x:ty ) => {
+        impl From<($x, $x, $x)> for Coordinate3d {
+            fn from((x, y, z): ($x, $x, $x)) -> Self {
+                let x = x as isize;
+                let y = y as isize;
+                let z = z as isize;
+                Self { x, y, z }
+            }
+        }
+    };
+}
+
+coord3d_from!(usize);
+coord3d_from!(isize);
+coord3d_from!(u32);
+coord3d_from!(i32);
+coord3d_from!(u64);
+coord3d_from!(i64);
+
+impl Point for Coordinate3d {}
+
+impl Point for (isize, isize, isize) {}
 
 impl<K: Point, V> FromIterator<(K, V)> for Space<K, V>
 where
@@ -163,6 +286,106 @@ where
     }
 }
 
+impl<V> Space<Coordinate, V> {
+    pub fn bounding_box(&self) -> (Coordinate, Coordinate) {
+        let mut x_set = HashSet::new();
+        let mut y_set = HashSet::new();
+
+        for key in self.keys() {
+            x_set.insert(key.x);
+            y_set.insert(key.y);
+        }
+
+        let x: Vec<isize> = x_set.into_iter().sorted().collect();
+        let y: Vec<isize> = y_set.into_iter().sorted().collect();
+
+        ((x[0], y[0]).into(), (x[x.len() - 1], y[y.len() - 1]).into())
+    }
+}
+
+impl<V> std::fmt::Display for Space<Coordinate, V>
+where
+    V: std::fmt::Display + Default + Clone + std::fmt::Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut out = String::new();
+        let (lower, upper) = self.bounding_box();
+
+        for y in lower.y..=upper.y {
+            for x in lower.x..=upper.x {
+                let coord = (x, y).into();
+                let item = self.get(&coord).unwrap_or(&V::default()).clone();
+                out.push_str(&format!("{item}"));
+            }
+            out.push('\n');
+        }
+        write!(f, "{out}")
+    }
+}
+
+impl<V> Space<Coordinate3d, V> {
+    pub fn bounding_box(&self) -> (Coordinate3d, Coordinate3d) {
+        let mut x_set = HashSet::new();
+        let mut y_set = HashSet::new();
+        let mut z_set = HashSet::new();
+
+        for key in self.keys() {
+            x_set.insert(key.x);
+            y_set.insert(key.y);
+            z_set.insert(key.z);
+        }
+
+        let x: Vec<isize> = x_set.into_iter().sorted().collect();
+        let y: Vec<isize> = y_set.into_iter().sorted().collect();
+        let z: Vec<isize> = z_set.into_iter().sorted().collect();
+
+        (
+            (x[0], y[0], z[0]).into(),
+            (x[x.len() - 1], y[y.len() - 1], z[z.len() - 1]).into(),
+        )
+    }
+
+    pub fn slices(&self) -> Vec<Space<Coordinate, V>>
+    where
+        V: Clone,
+    {
+        let mut out = Vec::new();
+        let (lower, upper) = self.bounding_box();
+
+        for z in lower.z..=upper.z {
+            let mut slice = Vec::new();
+
+            for y in lower.y..=upper.y {
+                for x in lower.x..=upper.x {
+                    let this = (x, y, z).into();
+                    if let Some(value) = self.get(&this) {
+                        let coord = (x, y).into();
+                        slice.push((coord, value.clone()))
+                    }
+                }
+            }
+            out.push(slice.into_iter().collect());
+        }
+
+        out
+    }
+}
+
+impl<V> std::fmt::Display for Space<Coordinate3d, V>
+where
+    V: std::fmt::Display + Default + Clone + std::fmt::Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let planes = self
+            .slices()
+            .iter()
+            .enumerate()
+            .map(|(z, s)| format!("z: {z}\n{s}\n---"))
+            .join("\n\n");
+        write!(f, "{planes}")
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -170,7 +393,7 @@ mod test {
     #[test]
     fn create_grid() {
         let objects = vec![((2, 4), false)];
-        let g: Space<(i32, i32), bool> = objects.into_iter().collect();
+        let g: Space<(isize, isize), bool> = objects.into_iter().collect();
         dbg!(g);
     }
 
@@ -186,7 +409,7 @@ mod test {
         let c: Coordinate = (1 as u32, 1 as u32).into();
         assert_eq!(c, expected);
 
-        let c: Coordinate = (1 as i32, 1 as i32).into();
+        let c: Coordinate = (1 as isize, 1 as isize).into();
         assert_eq!(c, expected);
     }
 }
