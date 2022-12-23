@@ -1,7 +1,7 @@
 use std::{
     collections::{HashMap, HashSet},
     hash::Hash,
-    ops::{Add, Sub},
+    ops::{Add, Mul, Sub},
 };
 
 use itertools::Itertools;
@@ -33,52 +33,9 @@ impl<P: Point, T> Space<P, T> {
     }
 }
 
-pub fn bounding_box<T>(space: &Space<Coordinate, T>) -> (Coordinate, Coordinate) {
-    let mut lower = Coordinate::new(0, 0);
-    let mut upper = Coordinate::new(0, 0);
-
-    for coordinate in space.keys() {
-        if coordinate.x < lower.x {
-            lower.x = coordinate.x;
-        }
-        if coordinate.y < lower.y {
-            lower.y = coordinate.y
-        }
-
-        if coordinate.x > upper.x {
-            upper.x = coordinate.x;
-        }
-        if coordinate.y > upper.y {
-            upper.y = coordinate.y
-        }
-    }
-
-    (lower, upper)
-}
-
 pub trait Traversable<P: Point> {
     fn connected(&self, start: &P, end: &P) -> bool;
 }
-
-// impl <P: Point, T: std::fmt::Display + Default> Space<P, T> {
-//     pub fn print_grid(&self)
-
-//     {
-//     let (lower, upper) = bounding_box(&g);
-
-//     for row in iter_rows(lower, upper) {
-//         for coord in row {
-//             let item = match g.get(&coord) {
-//                 Some(i) => i.clone(),
-//                 None => T::default(),
-//             };
-//             print!("{}", item);
-//         }
-//         print!("\n");
-//     }
-//     println!("");
-// }
-// }
 
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Coordinate {
@@ -121,11 +78,25 @@ impl Coordinate {
     }
 }
 
+impl std::fmt::Display for Coordinate {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({}, {})", self.x, self.y)
+    }
+}
+
 impl Add<Coordinate> for Coordinate {
     type Output = Self;
 
     fn add(self, rhs: Coordinate) -> Self::Output {
         ((self.x + rhs.x), (self.y + rhs.y)).into()
+    }
+}
+
+impl Mul<isize> for Coordinate {
+    type Output = Coordinate;
+
+    fn mul(self, rhs: isize) -> Self::Output {
+        (self.x * rhs, self.y * rhs).into()
     }
 }
 
@@ -300,6 +271,39 @@ impl<V> Space<Coordinate, V> {
 
         ((x[0], y[0]).into(), (x[x.len() - 1], y[y.len() - 1]).into())
     }
+
+    pub fn from_lines(input: &str) -> Self
+    where
+        V: From<char>,
+    {
+        let mut out = Vec::new();
+        for (y, line) in input.lines().enumerate() {
+            for (x, ch) in line.chars().enumerate() {
+                let coord = (x, y).into();
+                let value = V::from(ch);
+                out.push((coord, value))
+            }
+        }
+
+        out.into_iter().collect()
+    }
+
+    pub fn from_lines_rev(input: &str) -> Self
+    where
+        V: From<char>,
+    {
+        let mut out = Vec::new();
+        let lines_num = input.lines().count();
+        for (y, line) in input.lines().enumerate() {
+            for (x, ch) in line.chars().enumerate() {
+                let coord = (x, lines_num - y).into();
+                let value = V::from(ch);
+                out.push((coord, value))
+            }
+        }
+
+        out.into_iter().collect()
+    }
 }
 
 impl<V> std::fmt::Display for Space<Coordinate, V>
@@ -319,6 +323,35 @@ where
             out.push('\n');
         }
         write!(f, "{out}")
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum Cardinal {
+    North,
+    NorthEast,
+    East,
+    SouthEast,
+    South,
+    SouthWest,
+    West,
+    NorthWest,
+}
+
+impl Add<Cardinal> for Coordinate {
+    type Output = Coordinate;
+
+    fn add(self, rhs: Cardinal) -> Self::Output {
+        match rhs {
+            Cardinal::North => self.up(),
+            Cardinal::NorthEast => self.up().right(),
+            Cardinal::East => self.right(),
+            Cardinal::SouthEast => self.down().right(),
+            Cardinal::South => self.down(),
+            Cardinal::SouthWest => self.down().left(),
+            Cardinal::West => self.left(),
+            Cardinal::NorthWest => self.up().left(),
+        }
     }
 }
 
@@ -370,6 +403,29 @@ impl<V> Space<Coordinate3d, V> {
     }
 }
 
+fn sorted<T: PartialEq + PartialOrd>(a: T, b: T) -> (T, T) {
+    if a <= b {
+        (a, b)
+    } else {
+        (b, a)
+    }
+}
+
+pub fn coordinates_within(a: Coordinate, b: Coordinate) -> Vec<Coordinate> {
+    let mut coords: Vec<Coordinate> = Vec::new();
+
+    let (y_left, y_right) = sorted(a.y, b.y);
+    let (x_left, x_right) = sorted(a.x, b.x);
+
+    for y in y_left..y_right {
+        for x in x_left..x_right {
+            coords.push(Coordinate::new(x, y))
+        }
+    }
+
+    coords
+}
+
 impl<V> std::fmt::Display for Space<Coordinate3d, V>
 where
     V: std::fmt::Display + Default + Clone + std::fmt::Debug,
@@ -384,8 +440,6 @@ where
         write!(f, "{planes}")
     }
 }
-
-
 
 #[cfg(test)]
 mod test {
