@@ -151,7 +151,7 @@ fn main() {
 
     let graph = blizzards.to_graph();
 
-    let (start_pos, _) = blizzards.start_end();
+    let (start_pos, end_pos) = blizzards.start_end();
     let start = (start_pos.x, start_pos.y, 0).into();
     let start = blizzards.idx_map[&start];
     let first = astar(
@@ -159,7 +159,7 @@ fn main() {
         start,
         |idx| {
             let node = graph.node_weight(idx).unwrap();
-            node.x == blizzards.upper.x && node.y == blizzards.upper.y + 1
+            node.x == end_pos.x && node.y == end_pos.y
         },
         |_| 1,
         |_| 0,
@@ -174,7 +174,7 @@ fn main() {
         *start,
         |idx| {
             let node = graph.node_weight(idx).unwrap();
-            node.x == blizzards.lower.x && node.y == blizzards.lower.y - 1
+            node.x == start_pos.x && node.y == start_pos.y
         },
         |_| 1,
         |_| 0,
@@ -188,7 +188,7 @@ fn main() {
         *start,
         |idx| {
             let node = graph.node_weight(idx).unwrap();
-            node.x == blizzards.upper.x && node.y == blizzards.upper.y + 1
+            node.x == end_pos.x && node.y == end_pos.y
         },
         |_| 1,
         |_| 0,
