@@ -144,9 +144,6 @@ fn main() {
     let pairs: Vec<(Coordinate, Direction)> = initial_space.clone().into_iter().collect();
 
     let mut blizzards = Blizzards::new(pairs);
-
-    dbg!(blizzards.lower, blizzards.upper);
-
     blizzards.full_cycle();
 
     let graph = blizzards.to_graph();
