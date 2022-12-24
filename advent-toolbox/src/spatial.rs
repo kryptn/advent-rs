@@ -293,10 +293,9 @@ impl<V> Space<Coordinate, V> {
         V: From<char>,
     {
         let mut out = Vec::new();
-        let lines_num = input.lines().count();
-        for (y, line) in input.lines().enumerate() {
+        for (y, line) in input.lines().rev().enumerate() {
             for (x, ch) in line.chars().enumerate() {
-                let coord = (x, lines_num - y).into();
+                let coord = (x, y).into();
                 let value = V::from(ch);
                 out.push((coord, value))
             }
@@ -417,8 +416,8 @@ pub fn coordinates_within(a: Coordinate, b: Coordinate) -> Vec<Coordinate> {
     let (y_left, y_right) = sorted(a.y, b.y);
     let (x_left, x_right) = sorted(a.x, b.x);
 
-    for y in y_left..y_right {
-        for x in x_left..x_right {
+    for y in y_left..=y_right {
+        for x in x_left..=x_right {
             coords.push(Coordinate::new(x, y))
         }
     }

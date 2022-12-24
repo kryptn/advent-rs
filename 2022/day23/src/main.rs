@@ -40,8 +40,8 @@ struct Grid {
 }
 
 const DIRECTIONS: [Cardinal; 4] = [
-    Cardinal::South, // actually "up"
-    Cardinal::North, // actually "down"
+    Cardinal::North,
+    Cardinal::South,
     Cardinal::West,
     Cardinal::East,
 ];
@@ -108,7 +108,7 @@ impl Grid {
 
 impl From<&str> for Grid {
     fn from(input: &str) -> Self {
-        let grid = GridType::from_lines(input);
+        let grid = GridType::from_lines_rev(input);
         let grid = grid
             .clone()
             .into_iter()
@@ -171,6 +171,8 @@ fn main() {
 
     for _ in 0..10 {
         grid.next().unwrap();
+        // println!("{}\n\n", grid.grid);
+        // std::thread::sleep(std::time::Duration::from_millis(50));
     }
 
     let (lower, upper) = grid.grid.bounding_box();
@@ -178,7 +180,10 @@ fn main() {
     let p1 = area - grid.grid.len() as isize;
     println!("part_1 => {}", p1);
 
-    while let Some(_) = grid.next() {}
+    while let Some(_) = grid.next() {
+        // println!("{}\n\n", grid.grid);
+        // std::thread::sleep(std::time::Duration::from_millis(50));
+    }
     println!("part_2 => {}", grid.round);
 }
 
