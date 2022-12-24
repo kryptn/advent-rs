@@ -1,5 +1,6 @@
 use std::{
     collections::{HashMap, HashSet},
+    error::Error,
     hash::Hash,
     ops::{Add, Mul, Sub},
 };
@@ -338,7 +339,7 @@ pub enum Cardinal {
 }
 
 impl Add<Cardinal> for Coordinate {
-    type Output = Coordinate;
+    type Output = Self;
 
     fn add(self, rhs: Cardinal) -> Self::Output {
         match rhs {
@@ -350,6 +351,41 @@ impl Add<Cardinal> for Coordinate {
             Cardinal::SouthWest => self.down().left(),
             Cardinal::West => self.left(),
             Cardinal::NorthWest => self.up().left(),
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub enum Direction {
+    Up,
+    Right,
+    Down,
+    Left,
+    None,
+}
+
+impl Add<Direction> for Coordinate {
+    type Output = Self;
+
+    fn add(self, rhs: Direction) -> Self::Output {
+        match rhs {
+            Direction::Up => self.up(),
+            Direction::Right => self.right(),
+            Direction::Down => self.down(),
+            Direction::Left => self.left(),
+            Direction::None => self,
+        }
+    }
+}
+
+impl From<char> for Direction {
+    fn from(value: char) -> Self {
+        match value {
+            '^' | 'U' | 'u' => Self::Up,
+            '>' | 'R' | 'r' => Self::Right,
+            'v' | 'D' | 'd' => Self::Down,
+            '<' | 'L' | 'l' => Self::Left,
+            _ => Self::None,
         }
     }
 }
