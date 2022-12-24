@@ -113,6 +113,18 @@ impl Numbers {
             self.cursor = next_cursor.clone();
         }
     }
+
+    fn sum_of_three(&mut self) -> isize {
+        self.move_to_zero();
+        let mut out = 0;
+        for i in 0..=3000 {
+            let value = self.next().unwrap();
+            if (i) % 1000 == 0 {
+                out += value;
+            }
+        }
+        out
+    }
 }
 
 impl Iterator for Numbers {
@@ -144,35 +156,16 @@ fn main() {
     let mut numbers = Numbers::from(initial_numbers.clone());
 
     numbers.round();
-    numbers.move_to_zero();
-
-    let mut part_1 = 0;
-    for i in 0..=3000 {
-        let value = numbers.next().unwrap();
-        if (i) % 1000 == 0 {
-            part_1 += value;
-            println!("{i} -> {value}");
-        }
-    }
+    let part_1 = numbers.sum_of_three();
     println!("part_1 => {}", part_1);
 
     let p2_numbers: Vec<_> = initial_numbers.iter().map(|v| v * 811589153).collect();
     let mut fixed_numbers = Numbers::from(p2_numbers);
-
     for _ in 0..10 {
         fixed_numbers.round()
     }
-    fixed_numbers.move_to_zero();
 
-    let mut part_2 = 0;
-    for i in 0..=3000 {
-        let value = fixed_numbers.next().unwrap();
-        if (i) % 1000 == 0 {
-            part_2 += value;
-            println!("{i} -> {value}");
-        }
-    }
-
+    let part_2 = fixed_numbers.sum_of_three();
     println!("part_2 => {}", part_2);
 }
 
