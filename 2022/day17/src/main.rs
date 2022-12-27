@@ -1,9 +1,14 @@
+#![allow(unused_variables)]
+#![allow(unused_imports)]
+#![allow(dead_code)]
+
 use std::collections::{HashMap, VecDeque};
 
 use advent::{
     grid::{print_grid, Coordinate, Grid, RelativeDirection},
     input_store,
 };
+use itertools::Itertools;
 
 #[derive(Clone, Copy, Debug)]
 enum Rock {
@@ -63,6 +68,17 @@ impl Rock {
         }
     }
 
+    fn in_bounds(&self, at: Coordinate) -> bool {
+        at.y >= 0
+            && match self {
+                Rock::Flat => at.x >= 0 && at.x < 5,
+                Rock::Cross => at.x >= 1 && at.x < 6,
+                Rock::Corner => at.x >= 2 && at.x < 7,
+                Rock::Bar => at.x >= 0 && at.x < 7,
+                Rock::Box => at.x >= 0 && at.x < 6,
+            }
+    }
+
     fn offset_coordinates(&self, offset: Coordinate) -> Vec<Coordinate> {
         self.coordinates().iter().map(|c| *c + offset).collect()
     }
@@ -116,6 +132,7 @@ impl Default for RockChar {
 struct Column {
     stopped_rocks: Grid<RockChar>,
     wind: Vec<RelativeDirection>,
+    gusts: usize,
     rock_cycler: Vec<Rock>,
     falling_rock: Option<FallingRock>,
     fallen_rocks: usize,
@@ -156,11 +173,13 @@ impl Column {
         let rock_cycler = Rock::cycle();
         let falling_rock = None;
 
+        let gusts = 0;
         let fallen_rocks = 0;
 
         Self {
             stopped_rocks,
             wind,
+            gusts,
             rock_cycler,
             falling_rock,
             fallen_rocks,
@@ -169,9 +188,14 @@ impl Column {
     }
 
     fn check_collision(&self, shape: Rock, at: Coordinate) -> bool {
-        shape.offset_coordinates(at).iter().any(|c| {
-            c.x < 0 || c.x >= self.column_width || c.y < 0 || self.stopped_rocks.contains_key(&c)
-        })
+        !shape.in_bounds(at)
+            || shape
+                .offset_coordinates(at)
+                .iter()
+                .any(|c| self.stopped_rocks.contains_key(&c))
+        // shape.offset_coordinates(at).iter().any(|c| {
+        //     c.x < 0 || c.x >= self.column_width || c.y < 0 || self.stopped_rocks.contains_key(&c)
+        // })
     }
 
     fn to_full_grid(&self) -> Grid<RockChar> {
@@ -188,26 +212,32 @@ impl Column {
 
         grid
     }
+}
 
-    fn gc(&mut self) {
-        let mut heights: HashMap<i64, Vec<i64>> = HashMap::new();
-        for coord in self.stopped_rocks.keys() {
-            heights.entry(coord.x).or_default().push(coord.y);
-        }
+#[derive(Clone, Hash, Eq, PartialEq)]
+struct ComparativeState {
+    block_idx: usize,
+    gust_idx: usize,
+    blocks: Vec<Coordinate>,
+}
 
-        let lowest_height = heights
-            .values()
-            .map(|yh| yh.iter().max().unwrap())
-            .map(|y| y)
-            .min()
-            .unwrap();
-
-        self.stopped_rocks = self
+impl From<Column> for ComparativeState {
+    fn from(column: Column) -> Self {
+        let gust_idx = column.gusts;
+        let block_idx = column.fallen_rocks % 5;
+        let highest = column.highest_rock();
+        let blocks = column
             .stopped_rocks
-            .iter()
-            .filter(|(k, v)| k.y >= lowest_height - 50)
-            .map(|(&c, _)| (c, RockChar::Stopped))
+            .keys()
+            .filter(|c| c.y > highest - 10)
+            .sorted()
             .collect();
+
+        Self {
+            block_idx,
+            gust_idx,
+            blocks,
+        }
     }
 }
 
@@ -218,7 +248,7 @@ impl Iterator for Column {
         let next_rock = match self.falling_rock {
             Some(rock) => match rock.state {
                 SimulationState::Wind => {
-                    let wind = self.next_wind();
+                    let wind = self.wind[self.gusts];
                     // println!("rock is being blown {:?}", wind);
 
                     let next_coord = rock.coord + wind.into();
@@ -232,6 +262,8 @@ impl Iterator for Column {
                         // println!("rock went {:?}", wind);
                         next_coord
                     };
+
+                    self.gusts = (self.gusts + 1) % self.wind.len();
 
                     Some(FallingRock {
                         kind: rock.kind,
@@ -266,10 +298,6 @@ impl Iterator for Column {
         };
 
         self.falling_rock = next_rock;
-
-        if self.fallen_rocks > 0 && self.fallen_rocks % 1000 == 0 {
-            self.gc();
-        }
 
         // println!("\n\n\n\n\n");
 
