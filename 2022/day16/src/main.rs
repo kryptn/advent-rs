@@ -55,7 +55,7 @@ fn main() {
 
     let aa_idx = name_to_idx["AA"];
 
-    // in binary this would be focus-many 1's
+    // in binary this would be valves_with_flow-many 1's
     let all_on = (1 << valves_with_flow) - 1;
 
     let mut space = Array3::<u16>::zeros([30, valves.len(), all_on + 1]);
