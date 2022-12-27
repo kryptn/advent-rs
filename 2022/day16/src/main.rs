@@ -2,173 +2,27 @@ use std::collections::HashMap;
 
 use advent::input_store;
 use itertools::Itertools;
-use petgraph::{algo::astar, prelude::UnGraph, stable_graph::NodeIndex};
-use rayon::prelude::{ParallelBridge, ParallelIterator};
-
-#[derive(Clone)]
-struct Valve {
-    name: String,
-    rate: usize,
-    leads_to: Vec<String>,
-}
-
-impl From<&str> for Valve {
-    fn from(input: &str) -> Self {
-        let pruned: String = input
-            .trim()
-            .chars()
-            .filter(|c| match c {
-                'A'..='Z' | '0'..='9' | ' ' => true,
-                _ => false,
-            })
-            .collect();
-        let parts: Vec<&str> = pruned.trim().split_whitespace().collect();
-
-        let name = parts[1].to_string();
-        let rate = parts[2].parse().unwrap();
-        let leads_to = parts[3..].iter().map(|p| p.to_string()).collect();
-
-        Self {
-            name,
-            rate,
-            leads_to,
-        }
-    }
-}
-
-impl Valve {
-    fn edges(&self) -> Vec<(String, String)> {
-        self.leads_to
-            .iter()
-            .map(|d| (self.name.clone(), d.clone()))
-            .collect()
-    }
-}
-
-impl std::fmt::Debug for Valve {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}: {}", self.name, self.rate)
-    }
-}
+use ndarray::Array3;
 
 #[derive(Debug)]
-struct Valves {
-    valves: HashMap<String, Valve>,
-    valves_by_rate: Vec<String>,
-    graph: UnGraph<Valve, usize>,
-    idx_map: HashMap<String, NodeIndex>,
+struct Valve<'a> {
+    name: &'a str,
+    flow: u16,
+    edges: Vec<&'a str>,
 }
 
-impl From<Vec<Valve>> for Valves {
-    fn from(valves: Vec<Valve>) -> Self {
-        let valves: HashMap<String, Valve> =
-            valves.into_iter().map(|v| (v.name.clone(), v)).collect();
-
-        let valves_by_rate = valves
-            .values()
-            .filter(|v| v.rate > 0)
-            .sorted_by(|a, b| b.rate.cmp(&a.rate))
-            .map(|v| v.name.clone())
-            .collect();
-
-        Self {
-            valves,
-            valves_by_rate,
-            graph: UnGraph::default(),
-            idx_map: HashMap::new(),
-        }
-    }
-}
-
-impl Valves {
-    fn all_edges(&self) -> Vec<(String, String)> {
-        self.valves.values().map(|v| v.edges()).flatten().collect()
-    }
-
-    fn as_graph(&mut self) {
-        let mut graph = UnGraph::default();
-
-        for valve in self.valves.values() {
-            let idx = graph.add_node(valve.clone());
-            self.idx_map.insert(valve.name.clone(), idx);
-        }
-
-        self.all_edges()
-            .iter()
-            .map(|(a, b)| {
-                let a_idx = self.idx_map[a];
-                let b_idx = self.idx_map[b];
-
-                if a <= b {
-                    (a_idx, b_idx)
-                } else {
-                    (b_idx, a_idx)
-                }
-            })
-            .for_each(|(a, b)| {
-                if !graph.contains_edge(a, b) {
-                    graph.add_edge(a, b, 1);
-                }
-            });
-
-        self.graph = graph;
-    }
-
-    fn distance(&self, start: &String, end: &String) -> Option<usize> {
-        let start_idx = self.idx_map[start];
-        let end_idx = self.idx_map[end];
-
-        let path = astar(&self.graph, start_idx, |n| n == end_idx, |_| 1, |_| 1);
-        match path {
-            Some((len, _)) => Some(len as usize),
-            None => None,
-        }
-    }
-
-    fn follow_path(&self, path: &[String]) -> Vec<(usize, usize)> {
-        let mut out = Vec::new();
-
-        for (a, b) in path.iter().tuple_windows() {
-            let b_rate = self.valves[b].rate;
-            let distance = self.distance(a, b).unwrap();
-            out.push((b_rate, distance));
-        }
-
-        out
-    }
-}
-
-fn flow_for(input: Vec<(usize, usize)>, time: usize) -> usize {
-    let mut t = 0;
-    let mut flow_idx = 0;
-    let mut rate = 0;
-    let mut flow = 0;
-    let mut dist = 0;
-
-    while t <= time {
-        flow += rate;
-
-        if flow_idx < input.len() {
-            let (r, d) = input[flow_idx];
-            if dist > d {
-                flow_idx += 1;
-                rate += r;
-                dist = 0;
-                // println!("adding {rate} to flow");
-            }
-        }
-        t += 1;
-        dist += 1;
-
-        // println!("minute {t}, flow rate: {rate}, flow total: {flow}");
-    }
-
-    flow
+fn to_valve(input: &str) -> Valve {
+    let (name, flow, _, edges) = sscanf::sscanf!(
+        input,
+        "Valve {str} has flow rate={u16}; {str:/tunnels? leads? to valves?/} {str}",
+    )
+    .unwrap();
+    let edges = edges.split(", ").collect();
+    Valve { name, flow, edges }
 }
 
 fn main() {
     let input = input_store::get_input(2022, 16);
-
     // let input = r#"Valve AA has flow rate=0; tunnels lead to valves DD, II, BB
     // Valve BB has flow rate=13; tunnels lead to valves CC, AA
     // Valve CC has flow rate=2; tunnels lead to valves DD, BB
@@ -183,37 +37,67 @@ fn main() {
     let valves: Vec<Valve> = input
         .trim()
         .lines()
-        .map(|line| Valve::from(line))
-        .sorted_by(|a, b| b.rate.cmp(&a.rate))
-        .collect();
-    let mut valve_map: Valves = valves.clone().into();
-
-    // dbg!(&valve_map);
-    valve_map.as_graph();
-    // dbg!(&valve_map);
-
-    let mut paths: Vec<(Vec<String>, usize)> = valve_map
-        .valves_by_rate
-        .clone()
-        .into_iter()
-        .permutations(valve_map.valves_by_rate.len() - 8)
-        .par_bridge()
-        .map(|p| {
-            let mut path = vec!["AA".to_string()];
-            path.extend(p);
-            let flow_map = valve_map.follow_path(path.as_slice());
-            let flow = flow_for(flow_map, 30);
-            (path, flow)
-        })
-        // .sorted_by(|a, b| b.1.cmp(&a.1))
+        .map(|line| to_valve(line.trim()))
+        .sorted_by(|a, b| b.flow.cmp(&a.flow))
         .collect();
 
-    paths.sort_by(|a, b| b.1.cmp(&a.1));
+    let name_to_idx: HashMap<&str, usize> = valves
+        .iter()
+        .enumerate()
+        .map(|(idx, v)| (v.name, idx))
+        .collect();
+    let edges: Vec<Vec<usize>> = valves
+        .iter()
+        .map(|v| v.edges.iter().map(|e| name_to_idx[e]).collect())
+        .collect();
 
-    let p1 = paths.first().unwrap();
+    let valves_with_flow = valves.iter().filter(|v| v.flow > 0).count();
 
-    println!("part_1 => {}", p1.1);
-    println!("part_2 => {}", "not done");
+    let aa_idx = name_to_idx["AA"];
+
+    // in binary this would be focus-many 1's
+    let all_on = (1 << valves_with_flow) - 1;
+
+    let mut space = Array3::<u16>::zeros([30, valves.len(), all_on + 1]);
+
+    // bottom up, t is time remaining
+    for t in 1..30 {
+        // for every valve
+        for v_idx in 0..valves.len() {
+            let v_idx_mask = 1 << v_idx;
+
+            // for any possible valve state
+            for v_state in 0..=all_on {
+                let mut flow = space[(t, v_idx, v_state)];
+
+                // if valve is available and there's at least time to turn on and collect
+                // then update the flow total
+                if v_state & v_idx_mask != 0 && t >= 2 {
+                    flow = flow.max(
+                        space[(t - 1, v_idx, v_state - v_idx_mask)] + valves[v_idx].flow * t as u16,
+                    );
+                }
+
+                // if any step from here would give us more flow, use it
+                for &e in edges[v_idx].iter() {
+                    flow = flow.max(space[(t - 1, e, v_state)])
+                }
+                space[(t, v_idx, v_state)] = flow;
+            }
+        }
+    }
+
+    let part_1 = space[(29, aa_idx, all_on)];
+    println!("part_1 => {}", part_1);
+
+    let mut part_2 = 0;
+    for a in 0..((all_on + 1) / 2) {
+        // take away any valves 'a' has selected
+        let b = all_on - a;
+        part_2 = part_2.max(space[(25, aa_idx, a)] + space[(25, aa_idx, b)])
+    }
+
+    println!("part_2 => {}", part_2)
 }
 
 #[cfg(test)]
