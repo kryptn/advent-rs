@@ -1,11 +1,14 @@
 use std::{
-    collections::HashMap,
+    collections::{HashMap, VecDeque},
     ops::{Add, AddAssign, Sub},
+    sync::{Arc, RwLock},
 };
 
 use advent::input_store;
 use itertools::Itertools;
-use rayon::prelude::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
+use rayon::prelude::{
+    IntoParallelIterator, IntoParallelRefIterator, ParallelBridge, ParallelIterator,
+};
 
 #[derive(Eq, PartialEq, Hash, Debug, Clone, Copy)]
 enum Material {
@@ -24,17 +27,6 @@ struct Inventory {
 }
 
 impl Inventory {
-    fn cost_for(&self, material: Material) -> Self {
-        let mut cost = Self::default();
-        match material {
-            Material::Ore => cost.ore = self.ore,
-            Material::Clay => cost.clay = self.clay,
-            Material::Obsidian => cost.obsidian = self.obsidian,
-            Material::Geode => cost.geode = self.geode,
-        }
-        cost
-    }
-
     fn invalid(&self) -> bool {
         self.ore < 0 || self.clay < 0 || self.obsidian < 0 || self.geode < 0
     }
@@ -99,7 +91,7 @@ fn actions() -> Vec<Option<Material>> {
 }
 
 impl State {
-    fn new(blueprint: Blueprint) -> Self {
+    fn new(blueprint: Blueprint, time_remaining: usize) -> Self {
         let inventory = Inventory::default();
         let robots = Material::Ore.into();
 
@@ -107,17 +99,18 @@ impl State {
             blueprint,
             inventory,
             robots,
-            minute: 0,
+            minute: time_remaining,
         }
     }
 
     fn apply(&self, action: Option<Material>) -> Option<Self> {
-        let mut n = self.clone();
-        n.minute += 1;
+        if self.minute == 0 {
+            return None;
+        }
 
-        // if n.minute == 3 {
-        //     println!("minute: {}", n.minute);
-        // }
+        let mut n = self.clone();
+
+        n.minute -= 1;
 
         let pending = match action {
             Some(mat) => {
@@ -137,18 +130,42 @@ impl State {
         }
     }
 
-    fn max_geodes(&self, minutes: usize) -> isize {
-        if self.minute >= minutes {
-            return self.inventory.geode;
-        }
+    fn bounds(&self) -> (isize, isize) {
+        let geode_rate = self.robots.geode;
+        let remaining = self.minute as isize;
+        let min = (self.robots.geode * remaining) + self.inventory.geode;
+        let max = (((remaining * (remaining + 1)) / 2) + ((geode_rate - 1) * remaining))
+            + self.inventory.geode;
 
-        actions()
-            .par_iter()
-            .filter_map(|&act| self.apply(act))
-            .map(|ns| ns.max_geodes(minutes))
-            .max()
-            .unwrap()
+        (min, max)
     }
+
+    fn branches(&self) -> impl Iterator<Item = Self> + '_ {
+        actions().into_iter().filter_map(move |a| self.apply(a))
+    }
+}
+
+fn search(state: State) -> isize {
+    let mut best = 0;
+    let mut queue = VecDeque::new();
+    queue.push_front(state);
+
+    while !queue.is_empty() {
+        let this = queue.pop_front().unwrap();
+
+        for branch in this.branches() {
+            let (min, max) = branch.bounds();
+
+            if max >= best {
+                if min > best {
+                    best = min;
+                }
+                queue.push_front(branch);
+            }
+        }
+    }
+
+    best
 }
 
 #[derive(Debug, Clone)]
@@ -196,7 +213,7 @@ impl From<&str> for Blueprint {
         let get = |n: usize| -> isize { split[n].parse().unwrap() };
 
         let ore = Robot::new(Material::Ore, get(6), 0, 0, 0);
-        let clay = Robot::new(Material::Clay, get(6), 0, 0, 0);
+        let clay = Robot::new(Material::Clay, get(12), 0, 0, 0);
         let obsidian = Robot::new(Material::Obsidian, get(18), get(21), 0, 0);
         let geode = Robot::new(Material::Geode, get(27), 0, get(30), 0);
 
@@ -211,25 +228,34 @@ impl From<&str> for Blueprint {
 
 fn main() {
     let input = input_store::get_input(2022, 19);
-    let input = r#"Blueprint 1:    Each ore robot costs 4 ore.    Each clay robot costs 2 ore.    Each obsidian robot costs 3 ore and 14 clay.    Each geode robot costs 2 ore and 7 obsidian.
-  Blueprint 2:    Each ore robot costs 2 ore.    Each clay robot costs 3 ore.    Each obsidian robot costs 3 ore and 8 clay.    Each geode robot costs 3 ore and 12 obsidian."#;
+    //     let input = r#"Blueprint 1:    Each ore robot costs 4 ore.    Each clay robot costs 2 ore.    Each obsidian robot costs 3 ore and 14 clay.    Each geode robot costs 2 ore and 7 obsidian.
+    //   Blueprint 2:    Each ore robot costs 2 ore.    Each clay robot costs 3 ore.    Each obsidian robot costs 3 ore and 8 clay.    Each geode robot costs 3 ore and 12 obsidian."#;
 
     let blueprints: Vec<Blueprint> = input.trim().lines().map(|line| line.into()).collect();
 
     let quality: usize = blueprints
-        .iter()
+        .clone()
+        .into_iter()
         .enumerate()
-        .map(|(i, b)| (i + 1, State::new(b.clone())))
-        .map(|(i, state)| (i, state.max_geodes(24)))
-        .sorted_by(|lhs, rhs| lhs.1.cmp(&rhs.1))
-        .inspect(|x| {
-            dbg!(x);
+        .map(|(i, bp)| (i + 1, State::new(bp, 24)))
+        .par_bridge()
+        .map(|(i, state)| (i, search(state)))
+        .map(|(i, q)| {
+            println!("{i}, {q}");
+            i * q as usize
         })
-        .map(|(i, m)| i * m as usize)
         .sum();
 
     println!("part_1 => {}", quality);
-    println!("part_2 => {}", "not done");
+
+    let part_2 = blueprints
+        .into_iter()
+        .take(3)
+        .map(|bp| State::new(bp, 32))
+        .map(|state| search(state))
+        .fold(1, |a, b| a * b);
+
+    println!("part_2 => {}", part_2);
 }
 
 #[cfg(test)]
