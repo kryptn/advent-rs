@@ -5,7 +5,7 @@
 use std::collections::{HashMap, VecDeque};
 
 use advent::{
-    grid::{print_grid, Coordinate, Grid, RelativeDirection},
+    grid::{coordinates_within, print_grid, Coordinate, Grid, RelativeDirection},
     input_store,
 };
 use itertools::Itertools;
@@ -71,7 +71,7 @@ impl Rock {
     fn in_bounds(&self, at: Coordinate) -> bool {
         at.y >= 0
             && match self {
-                Rock::Flat => at.x >= 0 && at.x < 5,
+                Rock::Flat => at.x >= 0 && at.x < 4,
                 Rock::Cross => at.x >= 1 && at.x < 6,
                 Rock::Corner => at.x >= 2 && at.x < 7,
                 Rock::Bar => at.x >= 0 && at.x < 7,
@@ -129,14 +129,18 @@ impl Default for RockChar {
     }
 }
 
+#[derive(Clone)]
 struct Column {
     stopped_rocks: Grid<RockChar>,
     wind: Vec<RelativeDirection>,
     gusts: usize,
     rock_cycler: Vec<Rock>,
     falling_rock: Option<FallingRock>,
-    fallen_rocks: usize,
+    fallen_rocks: u128,
     column_width: i64,
+
+    states: HashMap<ComparativeState, (i64, u128)>,
+    offset: i64,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -152,7 +156,7 @@ impl Column {
 
     fn next_rock(&mut self) -> Rock {
         let idx = self.fallen_rocks % 5;
-        self.rock_cycler[idx]
+        self.rock_cycler[idx as usize]
     }
 
     fn next_wind(&mut self) -> RelativeDirection {
@@ -184,6 +188,8 @@ impl Column {
             falling_rock,
             fallen_rocks,
             column_width,
+            states: HashMap::new(),
+            offset: 0,
         }
     }
 
@@ -212,26 +218,72 @@ impl Column {
 
         grid
     }
+
+    fn check_for_cycle(&mut self) {
+        if self.offset > 0 {
+            return;
+        }
+
+        let state = ComparativeState::from(&self.clone());
+
+        // println!("block_idx: {}, gust_idx: {}, blocks: {:#b}", state.block_idx, state.gust_idx, state.blocks);
+
+        let this_height = self.highest_rock();
+        let this_rock = self.fallen_rocks;
+
+        // println!("checking for cycle at {this_rock}");
+
+        if let Some((last_height, last_rock)) = self.states.get(&state) {
+            let rock_delta = this_rock - *last_rock as u128;
+            let height_delta = this_height - last_height;
+            println!("found cycle at height: {this_height} ({height_delta}) rock: {this_rock} ({rock_delta})");
+
+            let space = 1000000000000 - self.fallen_rocks;
+            let times = space / rock_delta;
+
+            self.fallen_rocks += rock_delta * times;
+            self.offset = height_delta * times as i64;
+
+            println!(
+                "leaving rocks: {} and offset {}",
+                self.fallen_rocks, self.offset
+            );
+        } else {
+            self.states.insert(state, (this_height, this_rock));
+        }
+    }
 }
 
 #[derive(Clone, Hash, Eq, PartialEq)]
 struct ComparativeState {
     block_idx: usize,
     gust_idx: usize,
-    blocks: Vec<Coordinate>,
+    blocks: u128,
 }
 
-impl From<Column> for ComparativeState {
-    fn from(column: Column) -> Self {
+//
+//
+
+impl From<&Column> for ComparativeState {
+    fn from(column: &Column) -> Self {
         let gust_idx = column.gusts;
-        let block_idx = column.fallen_rocks % 5;
+        let block_idx = (column.fallen_rocks % 5) as usize;
         let highest = column.highest_rock();
-        let blocks = column
-            .stopped_rocks
-            .keys()
-            .filter(|c| c.y > highest - 10)
-            .sorted()
-            .collect();
+
+        let mut blocks = 0;
+        for block in coordinates_within(
+            (0, highest).into(),
+            (column.column_width - 1, highest - 18).into(),
+        ) {
+            let value = if column.stopped_rocks.contains_key(&block) {
+                1
+            } else {
+                0
+            };
+
+            blocks += value;
+            blocks = blocks << 1;
+        }
 
         Self {
             block_idx,
@@ -249,17 +301,17 @@ impl Iterator for Column {
             Some(rock) => match rock.state {
                 SimulationState::Wind => {
                     let wind = self.wind[self.gusts];
-                    // println!("rock is being blown {:?}", wind);
+                    // println!("rock {} is being blown {:?}", self.fallen_rocks, wind);
 
                     let next_coord = rock.coord + wind.into();
 
                     // dbg!(rock.coord, next_coord);
 
                     let next_coord = if self.check_collision(rock.kind, next_coord) {
-                        // println!("rock got blocked");
+                        // println!("rock {} got blocked", self.fallen_rocks);
                         rock.coord
                     } else {
-                        // println!("rock went {:?}", wind);
+                        // println!("rock {} went {:?}", self.fallen_rocks, wind);
                         next_coord
                     };
 
@@ -272,17 +324,23 @@ impl Iterator for Column {
                     })
                 }
                 SimulationState::Fall => {
-                    // println!("rock is falling");
+                    // println!("rock {} is falling", self.fallen_rocks);
                     let next_coord = rock.coord.down();
                     if self.check_collision(rock.kind, next_coord) {
-                        // println!("rock has settled");
+                        // println!("rock {} has settled", self.fallen_rocks);
                         for c in rock.kind.offset_coordinates(rock.coord) {
                             self.stopped_rocks.insert(c, RockChar::Stopped);
                         }
+
                         self.fallen_rocks += 1;
+
+                        if self.fallen_rocks >= 3000 {
+                            self.check_for_cycle();
+                        }
+
                         None
                     } else {
-                        // println!("rock fell");
+                        // println!("rock {} fell", self.fallen_rocks);
                         Some(FallingRock {
                             kind: rock.kind,
                             coord: next_coord,
@@ -318,6 +376,7 @@ fn main() {
 
         // let full_grid = column.to_full_grid();
         // if full_grid.len() > 0 {
+        //     std::thread::sleep(std::time::Duration::from_millis(200));
         //     print_grid(&full_grid)
         // }
     }
@@ -335,7 +394,7 @@ fn main() {
         // }
     }
 
-    let part_2 = column.highest_rock() + 1;
+    let part_2 = column.highest_rock() + 1 + column.offset;
     println!("part_2 => {}", part_2);
 }
 
