@@ -39,7 +39,7 @@ pub struct Selector {
 }
 
 impl Selector {
-    fn filename(&self) -> PathBuf {
+    pub fn filename(&self) -> PathBuf {
         let mut input_filename = input_cache_dir();
         input_filename.push(self.year.to_string());
         input_filename.push(format!("{:02}", self.day));

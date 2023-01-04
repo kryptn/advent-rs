@@ -12,8 +12,8 @@ use itertools::Itertools;
 
 #[derive(Hash, Eq, PartialEq, Copy, Clone, Debug, Default)]
 pub struct Coordinate {
-    pub x: i32,
-    pub y: i32,
+    pub x: i64,
+    pub y: i64,
 }
 
 impl std::fmt::Display for Coordinate {
@@ -22,14 +22,33 @@ impl std::fmt::Display for Coordinate {
     }
 }
 
+macro_rules! coord_from {
+    ( $x:ty ) => {
+        impl From<($x, $x)> for Coordinate {
+            fn from((x, y): ($x, $x)) -> Self {
+                let x = x as i64;
+                let y = y as i64;
+                Self { x, y }
+            }
+        }
+    };
+}
+
+coord_from!(usize);
+coord_from!(isize);
+coord_from!(u32);
+coord_from!(u64);
+coord_from!(i32);
+coord_from!(i64);
+
 #[derive(Debug, Clone)]
 pub enum Axis {
-    X(i32),
-    Y(i32),
+    X(i64),
+    Y(i64),
 }
 
 impl Axis {
-    pub fn new(along: char, value: i32) -> Self {
+    pub fn new(along: char, value: i64) -> Self {
         match along {
             'x' => Axis::X(value),
             'y' => Axis::Y(value),
@@ -102,10 +121,10 @@ impl FromStr for RelativeDirection {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "U" | "N" => Ok(Self::Up),
-            "R" | "E" => Ok(Self::Right),
-            "D" | "S" => Ok(Self::Down),
-            "L" | "W" => Ok(Self::Left),
+            "U" | "N" | "^" => Ok(Self::Up),
+            "R" | "E" | ">" => Ok(Self::Right),
+            "D" | "S" | "v" => Ok(Self::Down),
+            "L" | "W" | "<" => Ok(Self::Left),
             _ => Err(anyhow::Error::msg("unknown relative direction")),
         }
     }
@@ -136,7 +155,7 @@ pub fn parse_relative(input: &str) -> nom::IResult<&str, RelativeDirection> {
 }
 
 impl Coordinate {
-    pub fn new(x: i32, y: i32) -> Self {
+    pub fn new(x: i64, y: i64) -> Self {
         Self { x, y }
     }
 
@@ -201,6 +220,27 @@ impl Coordinate {
             Axis::Y(v) => (self.x, self.y + ((v - self.y) * 2)).into(),
         }
     }
+
+    pub fn ring(&self, distance: usize) -> Vec<Coordinate> {
+        let mut out = vec![self.clone()];
+        out.extend(self.cardinals());
+        let mut dia = 1;
+
+        while dia < distance {
+            let mut staged = HashSet::new();
+            for outer in &out[out.len() - (dia * 4)..] {
+                for cardinal in outer.cardinals() {
+                    if !out.contains(&cardinal) {
+                        staged.insert(cardinal);
+                    }
+                }
+            }
+            out.extend(staged);
+            dia += 1;
+        }
+
+        out
+    }
 }
 
 impl From<CardinalDirection> for Coordinate {
@@ -225,25 +265,11 @@ impl From<RelativeDirection> for Coordinate {
     }
 }
 
-impl From<(i32, i32)> for Coordinate {
-    fn from(t: (i32, i32)) -> Self {
-        Self::new(t.0, t.1)
-    }
-}
-
-impl From<(usize, usize)> for Coordinate {
-    fn from((x, y): (usize, usize)) -> Self {
-        let x = x as i32;
-        let y = y as i32;
-        (x, y).into()
-    }
-}
-
 impl From<&str> for Coordinate {
     fn from(input: &str) -> Self {
         let mut input_split = input.trim().split(",");
-        let x: i32 = input_split.next().unwrap().parse().unwrap();
-        let y: i32 = input_split.next().unwrap().parse().unwrap();
+        let x: i64 = input_split.next().unwrap().parse().unwrap();
+        let y: i64 = input_split.next().unwrap().parse().unwrap();
         (x, y).into()
     }
 }
@@ -300,7 +326,7 @@ impl Coordinate {
         }
     }
 
-    pub fn scale(self, by: i32) -> Self {
+    pub fn scale(self, by: i64) -> Self {
         Self {
             x: self.x * by,
             y: self.y * by,
@@ -311,7 +337,7 @@ impl Coordinate {
         vec![self.up(), self.right(), self.down(), self.left()]
     }
 
-    pub fn weighted_cardinals(self, measure: impl Fn(&Coordinate) -> i32) -> Vec<Self> {
+    pub fn weighted_cardinals(self, measure: impl Fn(&Coordinate) -> i64) -> Vec<Self> {
         self.cardinals()
             .iter()
             .sorted_by(|&l, &r| measure(l).cmp(&measure(r)))
@@ -323,8 +349,8 @@ impl Coordinate {
 pub fn coordinate_str(given: &str, sep: &str) -> Coordinate {
     let it: Vec<&str> = given.split(sep).collect();
     Coordinate {
-        x: it[0].parse::<i32>().unwrap(),
-        y: it[1].parse::<i32>().unwrap(),
+        x: it[0].parse::<i64>().unwrap(),
+        y: it[1].parse::<i64>().unwrap(),
     }
 }
 
@@ -397,13 +423,13 @@ pub fn iter_rows(a: Coordinate, b: Coordinate) -> Vec<Vec<Coordinate>> {
     lines
 }
 
-pub fn manhattan(a: Coordinate, b: Coordinate) -> i32 {
+pub fn manhattan(a: Coordinate, b: Coordinate) -> i64 {
     (b.x - a.x).abs() + (b.y - a.y).abs()
 }
 
 pub type Grid<T> = HashMap<Coordinate, T>;
 
-pub fn new_with_size<T: PartialEq + PartialOrd + Default>(x: i32, y: i32) -> Grid<T> {
+pub fn new_with_size<T: PartialEq + PartialOrd + Default>(x: i64, y: i64) -> Grid<T> {
     let mut g = Grid::<T>::new();
     for coordinate in coordinates_within(Coordinate::new(0, 0), Coordinate::new(x, y)) {
         g.insert(coordinate, T::default());
@@ -413,11 +439,34 @@ pub fn new_with_size<T: PartialEq + PartialOrd + Default>(x: i32, y: i32) -> Gri
 }
 
 pub fn bounding_box<T>(grid: &Grid<T>) -> (Coordinate, Coordinate) {
-    let x_coords: Vec<i32> = grid.keys().map(|c| c.x).sorted().collect();
-    let y_coords: Vec<i32> = grid.keys().map(|c| c.y).sorted().collect();
+    let x_coords: Vec<i64> = grid.keys().map(|c| c.x).sorted().collect();
+    let y_coords: Vec<i64> = grid.keys().map(|c| c.y).sorted().collect();
 
     let lower = (x_coords[0], y_coords[0]).into();
-    let upper = (x_coords[x_coords.len()-1], y_coords[y_coords.len()-1]).into();
+    let upper = (x_coords[x_coords.len() - 1], y_coords[y_coords.len() - 1]).into();
+
+    (lower, upper)
+}
+
+pub fn full_bounding_box<T>(grid: &Grid<T>) -> (Coordinate, Coordinate) {
+    let mut lower = Coordinate::new(0, 0);
+    let mut upper = Coordinate::new(0, 0);
+
+    for coordinate in grid.keys() {
+        if coordinate.x < lower.x {
+            lower.x = coordinate.x;
+        }
+        if coordinate.y < lower.y {
+            lower.y = coordinate.y
+        }
+
+        if coordinate.x > upper.x {
+            upper.x = coordinate.x;
+        }
+        if coordinate.y > upper.y {
+            upper.y = coordinate.y
+        }
+    }
 
     (lower, upper)
 }
@@ -426,7 +475,7 @@ pub fn print_grid<T>(g: &Grid<T>)
 where
     T: Default + std::fmt::Display + Clone,
 {
-    let (lower, upper) = bounding_box(&g);
+    let (lower, upper) = full_bounding_box(&g);
 
     for row in iter_rows(lower, upper) {
         for coord in row {
@@ -670,7 +719,7 @@ mod test {
             }
         }
 
-        pub fn new_grid(x: i32, y: i32) -> Grid<Cell> {
+        pub fn new_grid(x: i64, y: i64) -> Grid<Cell> {
             let mut grid = Grid::new();
             for coordinate in coordinates_within(Coordinate::zero(), Coordinate::new(x, y)) {
                 grid.insert(coordinate, Cell { coordinate });

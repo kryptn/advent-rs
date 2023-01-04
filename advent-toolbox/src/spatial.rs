@@ -355,7 +355,7 @@ impl Add<Cardinal> for Coordinate {
     }
 }
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum Direction {
     Up,
     Right,
@@ -386,6 +386,39 @@ impl From<char> for Direction {
             'v' | 'D' | 'd' => Self::Down,
             '<' | 'L' | 'l' => Self::Left,
             _ => Self::None,
+        }
+    }
+}
+
+impl Direction {
+    pub fn left(&self) -> Self {
+        match self {
+            Direction::Up => Direction::Left,
+            Direction::Right => Direction::Up,
+            Direction::Down => Direction::Right,
+            Direction::Left => Direction::Down,
+            Direction::None => *self,
+        }
+    }
+    pub fn right(&self) -> Self {
+        match self {
+            Direction::Up => Direction::Right,
+            Direction::Right => Direction::Down,
+            Direction::Down => Direction::Left,
+            Direction::Left => Direction::Up,
+            Direction::None => *self,
+        }
+    }
+}
+
+impl From<Direction> for Coordinate {
+    fn from(value: Direction) -> Self {
+        match value {
+            Direction::Up => (0isize, 1).into(),
+            Direction::Right => (1isize, 0).into(),
+            Direction::Down => (0isize, -1).into(),
+            Direction::Left => (-1isize, 0).into(),
+            Direction::None => (0isize, 0).into(),
         }
     }
 }

@@ -77,7 +77,7 @@ fn wait_for(selector: &Selector, force: bool) -> Result<String> {
     }
 
     let mut attempts = 0;
-    let max_attempts = 5;
+    let max_attempts = 10;
 
     loop {
         let result = get_or_fetch_input(&selector, force);
@@ -104,7 +104,7 @@ fn main() -> Result<()> {
                 get_or_fetch_input(&selector, false)?;
             }
 
-            eprintln!("success: fetched {}-{:0>2}", year, day);
+            eprintln!("success: fetched {year}-{day:0>2}");
         }
         Command::GetYear { year } => {
             get_all_inputs(year, false)?;
@@ -127,7 +127,7 @@ fn main() -> Result<()> {
                 None => prompt_password("Your cookie value: ")?,
             };
             let cookie = if !cookie.starts_with("session=") {
-                format!("session={}", cookie)
+                format!("session={cookie}")
             } else {
                 cookie
             };

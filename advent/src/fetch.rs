@@ -36,7 +36,10 @@ fn fetch_input(selector: &input_store::Selector) -> Result<String> {
 
     match resp.status() {
         StatusCode::OK => Ok(resp.text()?),
-        _ => Err(Error::msg("aaa")),
+        _ => {
+            let message = format!("resp: {}", resp.status());
+            Err(Error::msg(message))
+        }
     }
 }
 
