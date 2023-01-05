@@ -2,7 +2,7 @@ use std::{collections::HashMap, u32};
 
 use advent::input_store;
 
-use advent_toolbox::spatial::{bounding_box, Coordinate, Space, Traversable};
+use advent_toolbox::spatial::{Coordinate, Space, Traversable};
 use lazy_static::lazy_static;
 use petgraph::{algo::astar, prelude::DiGraph, stable_graph::node_index};
 
@@ -85,7 +85,7 @@ impl From<&str> for Terrain {
         let start = start.expect("given in map");
         let end = end.expect("given in map");
 
-        let (_, extent) = bounding_box(&terrain);
+        let (_, extent) = terrain.bounding_box();
 
         // println!("start: {}, end: {}", start, end);
 
@@ -148,8 +148,8 @@ impl Terrain {
     }
 
     fn from_idx(&self, idx: u32) -> Coordinate {
-        let x = idx as i32 % self.extent.x;
-        let y = idx as i32 / self.extent.x;
+        let x = idx as isize % self.extent.x;
+        let y = idx as isize / self.extent.x;
         (x, y).into()
     }
 

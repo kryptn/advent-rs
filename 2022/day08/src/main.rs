@@ -6,11 +6,11 @@ use advent::{
 };
 
 struct Forest {
-    trees: Grid<i32>,
+    trees: Grid<i64>,
     visible: Grid<bool>,
 
-    max_x: i32,
-    max_y: i32,
+    max_x: i64,
+    max_y: i64,
 }
 
 impl Forest {
@@ -115,8 +115,8 @@ impl Forest {
     }
 }
 
-impl From<HashMap<Coordinate, i32>> for Forest {
-    fn from(trees: HashMap<Coordinate, i32>) -> Self {
+impl From<HashMap<Coordinate, i64>> for Forest {
+    fn from(trees: HashMap<Coordinate, i64>) -> Self {
         let visible = HashMap::new();
         let max_x = trees.keys().map(|coord| coord.x).max().unwrap();
         let max_y = trees.keys().map(|coord| coord.y).max().unwrap();
@@ -138,7 +138,7 @@ fn main() {
     // 33549
     // 35390"#;
 
-    let trees: Grid<i32> = from_text(&input).unwrap();
+    let trees: Grid<i64> = from_text(&input).unwrap();
 
     let mut grid = HashMap::new();
 
@@ -146,7 +146,7 @@ fn main() {
         for (x, c) in line.trim().chars().enumerate() {
             let coordinate: Coordinate = (x, y).into();
             let d = c.to_digit(10).unwrap();
-            grid.insert(coordinate, d as i32);
+            grid.insert(coordinate, d as i64);
         }
     }
 

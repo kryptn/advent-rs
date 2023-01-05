@@ -32,11 +32,11 @@ struct Detection {
 }
 
 impl Detection {
-    fn distance(&self) -> i32 {
+    fn distance(&self) -> i64 {
         manhattan(self.sensor, self.beacon)
     }
 
-    fn range_at(&self, y: i32) -> Option<(i32, i32)> {
+    fn range_at(&self, y: i64) -> Option<(i64, i64)> {
         let delta = self.distance()  - (self.sensor.y - y).abs();
         if delta < 0 {
             None
@@ -46,12 +46,12 @@ impl Detection {
     }
 }
 
-fn detection_ranges_at(detections: &Vec<Detection>, y: i32) -> Vec<(i32, i32)> {
+fn detection_ranges_at(detections: &Vec<Detection>, y: i64) -> Vec<(i64, i64)> {
     let ranges: Vec<_> = detections.iter().filter_map(|d| d.range_at(y)).collect();
     join_ranges(ranges)
 }
 
-fn join_ranges(ranges: Vec<(i32, i32)>) -> Vec<(i32, i32)> {
+fn join_ranges(ranges: Vec<(i64, i64)>) -> Vec<(i64, i64)> {
     let ranges: Vec<_> = ranges
         .iter()
         .cloned()
