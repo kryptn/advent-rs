@@ -1,14 +1,11 @@
 use std::{
-    collections::{HashMap, VecDeque},
-    ops::{Add, AddAssign, Sub},
-    sync::{Arc, RwLock},
+    collections::VecDeque,
+    ops::{AddAssign, Sub},
 };
 
 use advent::input_store;
-use itertools::Itertools;
-use rayon::prelude::{
-    IntoParallelIterator, IntoParallelRefIterator, ParallelBridge, ParallelIterator,
-};
+
+use rayon::prelude::{ParallelBridge, ParallelIterator};
 
 #[derive(Eq, PartialEq, Hash, Debug, Clone, Copy)]
 enum Material {
@@ -260,7 +257,7 @@ fn main() {
 
 #[cfg(test)]
 mod test {
-    use super::*;
+
     use rstest::*;
 
     #[test]

@@ -187,7 +187,7 @@ fn main() {
     }
 
     loop {
-        let (cmp, d) = monkeys_p2.root_eq(x-1);
+        let (cmp, _d) = monkeys_p2.root_eq(x - 1);
         // println!("x: {x}, delta: -1, d: {d}");
 
         match cmp {
@@ -203,7 +203,7 @@ fn main() {
 
 #[cfg(test)]
 mod test {
-    use super::*;
+
     use rstest::*;
 
     #[test]

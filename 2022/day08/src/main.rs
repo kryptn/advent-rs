@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use advent::{
-    grid::{from_text, print_grid, Coordinate, Grid, RelativeDirection},
+    grid::{from_text, Coordinate, Grid, RelativeDirection},
     input_store,
 };
 
@@ -138,7 +138,7 @@ fn main() {
     // 33549
     // 35390"#;
 
-    let trees: Grid<i64> = from_text(&input).unwrap();
+    let _trees: Grid<i64> = from_text(&input).unwrap();
 
     let mut grid = HashMap::new();
 
@@ -183,7 +183,7 @@ fn main() {
 
 #[cfg(test)]
 mod test {
-    use super::*;
+
     use rstest::*;
 
     #[test]

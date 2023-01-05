@@ -57,7 +57,7 @@ struct Terrain {
 }
 
 impl Traversable<Coordinate> for Terrain {
-    fn connected(&self, start: &Coordinate, end: &Coordinate) -> bool {
+    fn connected(&self, _start: &Coordinate, _end: &Coordinate) -> bool {
         todo!()
     }
 }
@@ -100,7 +100,7 @@ impl From<&str> for Terrain {
 
 impl Terrain {
     fn traversable_edges(&self) -> Vec<(u32, u32)> {
-        let width = (self.extent.x + 1) as u32;
+        let _width = (self.extent.x + 1) as u32;
 
         self.terrain
             .iter()
@@ -199,7 +199,7 @@ fn main() {
 
 #[cfg(test)]
 mod test {
-    use super::*;
+
     use rstest::*;
 
     #[test]

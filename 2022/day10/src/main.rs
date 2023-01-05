@@ -252,7 +252,7 @@ fn main() {
         .enumerate()
         .map(|(idx, state)| {
             let y = (idx) / 40;
-            let x = (idx % 40);
+            let x = idx % 40;
             let rendered = ((x + 1) as i32 - state.x).abs() <= 1;
             // println!("cycle: {}, sprint center: {}", idx, state.x);
             ((x, y).into(), BooleanCell::from(rendered))
@@ -267,7 +267,7 @@ fn main() {
 
 #[cfg(test)]
 mod test {
-    use super::*;
+
     use rstest::*;
 
     #[test]

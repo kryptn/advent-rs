@@ -378,7 +378,7 @@ fn main() {
 
 #[cfg(test)]
 mod test {
-    
+
     use rstest::*;
 
     #[test]

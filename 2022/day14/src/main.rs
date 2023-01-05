@@ -1,5 +1,5 @@
 use advent::{
-    grid::{bounding_box, coordinates_within, print_grid, Coordinate, Grid},
+    grid::{bounding_box, coordinates_within, Coordinate, Grid},
     input_store,
     parsers::parse_coordinate,
 };

@@ -37,7 +37,7 @@ impl Detection {
     }
 
     fn range_at(&self, y: i64) -> Option<(i64, i64)> {
-        let delta = self.distance()  - (self.sensor.y - y).abs();
+        let delta = self.distance() - (self.sensor.y - y).abs();
         if delta < 0 {
             None
         } else {
@@ -117,7 +117,7 @@ fn main() {
 
 #[cfg(test)]
 mod test {
-    use super::*;
+
     use rstest::*;
 
     #[test]
