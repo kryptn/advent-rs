@@ -1,137 +1,58 @@
 use std::{
-    collections::{HashMap, HashSet, VecDeque},
-    convert::TryInto,
-    fmt,
-    hash::{Hash, Hasher},
-    io::{self, Write},
-    pin::Pin,
-    str::FromStr,
+    collections::{HashMap, HashSet},
+    hash::Hash,
+    sync::Arc,
 };
 
-use advent::{
-    fetch,
-    grid::{self, Coordinate},
-};
+use advent::fetch;
 use anyhow;
 use itertools::Itertools;
-use regex::{Regex, RegexSet};
+use nom::{
+    bytes::complete::{take_till, take_while},
+    FindSubstring, IResult,
+};
 
-#[derive(Debug)]
-struct Structure<'a> {
-    replacements: &'a Vec<(&'a str, &'a str)>,
-    original: String,
+use rayon::prelude::*;
 
-    prefix: String,
-    seen: HashSet<String>,
-    total: u32,
-}
+fn replacements_for(molecule: &String, replacements: &Vec<(&str, &str)>) -> Vec<String> {
+    let mut out = vec![];
 
-impl<'a> Structure<'a> {
-    fn new(replacements: &'a Vec<(&'a str, &'a str)>, prefix: String, original: String) -> Self {
-        Self {
-            replacements,
-            original,
-            prefix,
-            seen: HashSet::new(),
-            total: 0,
+    for (source, dest) in replacements {
+        if source.len() > molecule.len() {
+            continue;
         }
-    }
-
-    fn all(&self, c: char) -> bool {
-        self.prefix.chars().all(|ch| ch == c) && self.original.chars().all(|ch| ch == c)
-    }
-}
-
-fn replace(s: Structure) -> Vec<String> {
-    let mut s = s;
-
-    let mut out = Vec::new();
-
-    for (i, (matcher, repl)) in s.replacements.iter().enumerate() {
-        let next_structure = {
-            if s.original.starts_with(matcher) {
-                let mut next_prefix = s.prefix.clone();
-                //next_prefix.push_str(repl);
-                next_prefix.push_str(&s.original[0..1]);
-
-                let mut new = s.prefix.clone();
-                new.push_str(repl);
-
-                let next_original = &s.original[matcher.len()..s.original.len()];
-                new.push_str(next_original);
-
-                s.seen.insert(new.clone());
-                out.push(new);
-
-                let next = Structure::new(&s.replacements, next_prefix, next_original.to_string());
-
-                //println!("matched on {} and replaced with {}. \n\tprefix: {}\n\tsuffix: {}\n\n", matcher, repl, s.prefix, s.original);
-
-                next
-            } else {
-                let mut next_prefix = s.prefix.clone();
-                next_prefix.push_str(&s.original[0..1]);
-
-                let next_original = &s.original[1..s.original.len()];
-
-                let next = Structure::new(&s.replacements, next_prefix, next_original.to_string());
-
-                //println!("did not match {}. \n\tprefix: {}\n\tsuffix: {}\n\n", matcher, s.prefix, s.original);
-
-                next
-            }
-        };
-
-        //println!("next struture: \n\tprefix: {}\n\tsuffix: {}\n\n", &next_structure.prefix, &next_structure.original);
-
-        if next_structure.original.len() > 0 && i == 0 {
-            for new_str in replace(next_structure) {
-                out.push(new_str);
+        for idx in 0..(molecule.len() - source.len()) + 1 {
+            if molecule[idx..idx + source.len()] == **source {
+                let mut m = molecule.clone();
+                m.replace_range(idx..idx + source.len(), dest);
+                out.push(m);
             }
         }
     }
-
-    out
+    out.into_iter().collect()
 }
 
-fn reduce(s: Structure, target: &String) -> Option<i32> {
-    //println!("next struture: \n\tprefix: {}\n\tsuffix: {}\n\n", &s.prefix, &s.original);
+fn find_target(molecule: &String, target: &String, replacements: &Vec<(&str, &str)>) -> usize {
+    let mut candidates = vec![molecule.clone()];
+    let mut steps = 0;
+    loop {
+        steps += 1;
+        candidates = candidates
+            .into_iter()
+            .map(|m| replacements_for(&m, replacements))
+            .flatten()
+            .unique()
+            .sorted_by(|a, b| a.len().cmp(&b.len()))
+            // arbitrary, worked for my input. may not work for yours
+            .take(200)
+            .collect();
 
-    if s.original == *target && s.prefix.len() == 0 {
-        return Some(1);
-    } else if s.original.len() == 0 {
-        return None;
-    } else if s.all(target.chars().next().unwrap()) {
-        return None;
+        if candidates.contains(target) {
+            break;
+        }
     }
 
-    let branches: Vec<i32> = s
-        .replacements
-        .iter()
-        .map(|(original, expanded)| {
-            if s.original.starts_with(expanded) && (original != target || s.prefix.len() == 0) {
-                let mut next = s.prefix.clone();
-                next.push_str(original);
-                next.push_str(&s.original[expanded.len()..s.original.len()]);
-                Structure::new(&s.replacements, String::new(), next)
-            } else {
-                let mut next_prefix = s.prefix.clone();
-                next_prefix.push_str(&s.original[0..1]);
-
-                let next_original = &s.original[1..s.original.len()];
-                Structure::new(&s.replacements, next_prefix, next_original.to_string())
-            }
-        })
-        .map(|next| reduce(next, target))
-        .filter(|c| *c != None)
-        .map(|o| o.unwrap())
-        .collect();
-
-    if branches.len() == 0 {
-        return None;
-    }
-
-    Some(branches.iter().min().unwrap() + 1)
+    steps
 }
 
 fn main() {
@@ -143,17 +64,17 @@ fn main() {
 
     // HOH"#;
 
-    let input = r#"e => O
-e => H
-H => HO
-H => OH
-O => HH
+    // let input = r#"e => O
+    // e => H
+    // H => HO
+    // H => OH
+    // O => HH
 
-HOHOHO"#;
+    // HOHOHO"#;
 
-    let mut replacements: Vec<(&str, &str)> = Vec::new();
+    let mut replacements = vec![];
     let lines = input.lines().map(|l| l.trim()).collect_vec();
-    let starting = lines[lines.len() - 1];
+    let starting = lines[lines.len() - 1].to_string();
     for line in lines {
         if line.len() > 0 {
             let parts = line.split(" ").collect_vec();
@@ -163,29 +84,23 @@ HOHOHO"#;
         }
     }
 
-    dbg!(&replacements);
-    dbg!(&starting);
+    let result: Vec<_> = replacements_for(&starting.clone(), &replacements)
+        .into_iter()
+        .unique()
+        .collect();
+    println!("part 1 -> {}", result.len());
 
-    let s = Structure::new(&replacements, "".to_string(), starting.to_string());
+    let replacements: Vec<_> = replacements
+        .into_iter()
+        .map(|(a, b)| (b, a))
+        .sorted_by(|a, b| b.0.len().cmp(&a.0.len()))
+        .collect();
 
-    let all_replacements = replace(s);
-
-    let mut repl_set = HashSet::new();
-    for repl in &all_replacements {
-        repl_set.insert(repl);
-    }
-
-    //dbg!(&all_replacements);
-    //dbg!(&repl_set);
-
-    println!("part 1 -> {}", repl_set.len());
-
-    let mut r = replacements.clone();
-    r.reverse();
-
-    let s = Structure::new(&r, "".to_string(), starting.to_string());
-
-    println!("part 2 => {:?}", reduce(s, &String::from("e")));
+    // dbg!(&path);
+    println!(
+        "part 2 => {}",
+        find_target(&starting, &"e".to_string(), &replacements)
+    );
 }
 
 #[cfg(test)]
