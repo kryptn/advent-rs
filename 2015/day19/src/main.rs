@@ -2,8 +2,6 @@ use advent::fetch;
 
 use itertools::Itertools;
 
-use rayon::prelude::*;
-
 fn replacements_for(molecule: &String, replacements: &Vec<(&str, &str)>) -> Vec<String> {
     let mut out = vec![];
 
