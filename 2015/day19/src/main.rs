@@ -1,16 +1,6 @@
-use std::{
-    collections::{HashMap, HashSet},
-    hash::Hash,
-    sync::Arc,
-};
-
 use advent::fetch;
-use anyhow;
+
 use itertools::Itertools;
-use nom::{
-    bytes::complete::{take_till, take_while},
-    FindSubstring, IResult,
-};
 
 use rayon::prelude::*;
 
