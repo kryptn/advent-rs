@@ -83,13 +83,17 @@ struct Battle {
     poison_turns: u8,
     recharge_turns: u8,
 
+    hard_mode: bool,
     hurestic: Arc<RefCell<i32>>,
     actions: Vec<&'static Spell>,
 }
 
 impl Battle {
     fn branches(&self) -> Vec<BattleStatus> {
-        let temp = self.with_effects();
+        let mut temp = self.with_effects();
+        if self.hard_mode {
+            temp.player_health -= 1;
+        }
 
         let status = temp.status();
         let temp = match status {
@@ -133,11 +137,11 @@ impl Battle {
 
     fn status(self) -> BattleStatus {
         if self.boss_health <= 0 {
-            println!(
-                "win! actions: {}, mana spent: {}",
-                self.actions.len(),
-                self.player_mana_spent
-            );
+            // println!(
+            //     "win! actions: {}, mana spent: {}",
+            //     self.actions.len(),
+            //     self.player_mana_spent
+            // );
             if *self.hurestic.borrow() > self.player_mana_spent {
                 let mut lowest = self.hurestic.borrow_mut();
                 *lowest = self.player_mana_spent;
@@ -222,16 +226,16 @@ impl Battle {
         })
     }
 
-    fn solve(self) {
-        let mut layer = vec![self];
+    fn solve(&self) {
+        let mut layer = vec![self.clone()];
         let mut iteration = 0;
         while layer.len() > 0 {
-            println!("loop {}, layer len: {}", iteration, layer.len());
-            println!(
-                "    first boss health: {}, last boss health: {}",
-                layer[0].boss_health,
-                layer[layer.len() - 1].boss_health
-            );
+            // println!("loop {}, layer len: {}", iteration, layer.len());
+            // println!(
+            //     "    first boss health: {}, last boss health: {}",
+            //     layer[0].boss_health,
+            //     layer[layer.len() - 1].boss_health
+            // );
             iteration += 1;
             let next_layer = layer
                 .into_iter()
@@ -249,19 +253,19 @@ fn main() {
 
     let lowest_mana = Arc::new(RefCell::new(i32::MAX));
 
-    let battle = {
-        let mut b = Battle::default();
-        b.player_health = 50;
-        b.player_mana = 500;
-        b.boss_attack = 9;
-        b.boss_health = 51;
-        b.hurestic = lowest_mana.clone();
-        b
-    };
-
+    let mut battle = Battle::default();
+    battle.player_health = 50;
+    battle.player_mana = 500;
+    battle.boss_attack = 9;
+    battle.boss_health = 51;
+    battle.hurestic = lowest_mana.clone();
     battle.solve();
+    println!("part 1 -> {}", lowest_mana.borrow());
 
-    dbg!(lowest_mana);
+    *lowest_mana.borrow_mut() = i32::MAX;
+    battle.hard_mode = true;
+    battle.solve();
+    println!("part 2 -> {}", lowest_mana.borrow());
 }
 
 #[cfg(test)]
