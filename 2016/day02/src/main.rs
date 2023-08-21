@@ -1,11 +1,7 @@
 use std::collections::HashMap;
 
 use advent::{grid, input_store};
-use nom::{
-    character::complete::newline,
-    multi::{many0, separated_list0},
-    IResult,
-};
+use nom::{multi::many0, IResult};
 
 fn parse_line(input: &str) -> IResult<&str, Vec<grid::RelativeDirection>> {
     many0(grid::parse_relative)(input)
@@ -110,7 +106,6 @@ fn main() {
 
 #[cfg(test)]
 mod test {
-    use super::*;
 
     #[test]
     fn do_test() {
