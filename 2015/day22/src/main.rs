@@ -1,14 +1,9 @@
-use std::{
-    cell::RefCell,
-    ops::Add,
-    rc::Rc,
-    sync::{Arc, Mutex},
-};
+use std::{cell::RefCell, sync::Arc};
 
 use rayon::prelude::*;
 
-use advent::{fetch, numbers::factors};
-use itertools::{Combinations, Itertools, Powerset};
+use advent::fetch;
+use itertools::Itertools;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 enum Effect {
@@ -249,7 +244,7 @@ impl Battle {
 }
 
 fn main() {
-    let input = fetch::get_input(2015, 22);
+    let _input = fetch::get_input(2015, 22);
 
     let lowest_mana = Arc::new(RefCell::new(i32::MAX));
 
@@ -270,7 +265,6 @@ fn main() {
 
 #[cfg(test)]
 mod test {
-    use super::*;
 
     #[test]
     fn do_test() {
