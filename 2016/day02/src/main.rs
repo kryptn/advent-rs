@@ -11,10 +11,6 @@ fn parse_line(input: &str) -> IResult<&str, Vec<grid::RelativeDirection>> {
     many0(grid::parse_relative)(input)
 }
 
-fn parse_moves(input: &str) -> IResult<&str, Vec<Vec<grid::RelativeDirection>>> {
-    separated_list0(newline, parse_line)(input)
-}
-
 fn make_keypad() -> HashMap<grid::Coordinate, i32> {
     let mut keypad = HashMap::new();
 
@@ -31,40 +27,85 @@ fn make_keypad() -> HashMap<grid::Coordinate, i32> {
     keypad
 }
 
+fn make_keypad_p2() -> HashMap<grid::Coordinate, char> {
+    vec![
+        ((0, 2).into(), '1'),
+        ((-1, 1).into(), '2'),
+        ((0, 1).into(), '3'),
+        ((1, 1).into(), '4'),
+        ((-2, 0).into(), '5'),
+        ((-1, 0).into(), '6'),
+        ((0, 0).into(), '7'),
+        ((1, 0).into(), '8'),
+        ((2, 0).into(), '9'),
+        ((-1, -1).into(), 'A'),
+        ((0, -1).into(), 'B'),
+        ((1, -1).into(), 'C'),
+        ((0, -2).into(), 'D'),
+    ]
+    .into_iter()
+    .collect()
+}
+
+fn solve<'a, T>(
+    keypad: &'a HashMap<grid::Coordinate, T>,
+    start: grid::Coordinate,
+    movements: &Vec<Vec<grid::RelativeDirection>>,
+) -> Vec<&'a T> {
+    let mut out = vec![];
+    let mut pos = start;
+    for entry in movements {
+        for movement in entry {
+            let next = pos + grid::Coordinate::from(*movement);
+            if keypad.contains_key(&next) {
+                pos = next;
+            }
+        }
+
+        let val = keypad.get(&pos).expect("we shouldn't go out");
+        out.push(val);
+    }
+
+    out
+}
+
 fn main() {
     let input = input_store::get_input(2016, 2);
+
+    let movements: Vec<Vec<_>> = input
+        .trim()
+        .lines()
+        .map(|line| {
+            let (_, movements) = parse_line(line.trim()).unwrap();
+            movements
+        })
+        .collect();
+
     //     let input = r#"ULL
     // RRDDD
     // LURDL
     // UUUUD"#;
-    let (_, movements) = parse_moves(&input).unwrap();
+    // let (_, movements) = parse_moves(&input).unwrap();
 
     let keypad = make_keypad();
 
-    let mut code = String::new();
-    let mut pos = grid::Coordinate::new(0, 0);
-    for entry in movements {
-        // dbg!(&entry);
-
-        println!("\n\nstarting row at {:?}", pos);
-        for movement in entry {
-            let next = pos + movement.into();
-            //dbg!(next);
-            if keypad.contains_key(&next) {
-                pos = next;
-                println!("went {:?}, at {:?}", movement, pos);
-            } else {
-                println!("could not move {:?}, still at {:?}", movement, pos);
-            }
-        }
-
-        println!("ending row at {:?}", pos);
-
-        let val = keypad.get(&pos).expect("we shouldn't go out").to_owned();
-        code.push_str(&val.to_string())
-    }
-
+    let code = solve(&keypad, (0, 0).into(), &movements);
+    let code = code
+        .iter()
+        .map(|ch| format!("{}", ch))
+        .collect::<Vec<_>>()
+        .join("");
     println!("part 1 => {}", code);
+
+    let keypad = make_keypad_p2();
+
+    let code = solve(&keypad, (-2, 0).into(), &movements);
+    let code = code
+        .iter()
+        .map(|ch| format!("{}", ch))
+        .collect::<Vec<_>>()
+        .join("");
+    println!("part 2 => {}", code);
 }
 
 #[cfg(test)]
