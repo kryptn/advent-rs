@@ -4,13 +4,13 @@ if [ $# -ne 2 ]; then
 fi
 
 YEAR=$1
-DAY=$(printf "%02d" $2)
+NORMALIZED_DAY=$(printf "%02d" $2)
 
-OUT="$YEAR/day$DAY"
+OUT="$YEAR/day$NORMALIZED_DAY"
 mkdir -p $OUT/src
 
 
-sed 's/dayN/day'"$DAY"'/g' template/template/Cargo.toml > $OUT/Cargo.toml
+sed 's/dayN/day'"$NORMALIZED_DAY"'/g' template/template/Cargo.toml > $OUT/Cargo.toml
 sed "s|DAY: usize = 0|DAY: usize = ${DAY}|" template/template/src/main.rs | sed "s|YEAR: usize = 0|YEAR: usize = ${YEAR}|" > $OUT/src/main.rs
 echo created $OUT
 code -a $OUT
