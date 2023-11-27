@@ -10,8 +10,7 @@ OUT="$YEAR/day$DAY"
 mkdir -p $OUT/src
 
 
-sed 's/dayN/day'"$DAY"'/g' template/Cargo.toml > $OUT/Cargo.toml
-sed 's/DAY/'"$DAY"'/g' template/src/main.rs | sed 's/YEAR/'"$YEAR"'/g' > $OUT/src/main.rs
-
+sed 's/dayN/day'"$DAY"'/g' template/template/Cargo.toml > $OUT/Cargo.toml
+sed "s|DAY: usize = 0|DAY: usize = ${DAY}|" template/template/src/main.rs | sed "s|YEAR: usize = 0|YEAR: usize = ${YEAR}|" > $OUT/src/main.rs
 echo created $OUT
 code -a $OUT

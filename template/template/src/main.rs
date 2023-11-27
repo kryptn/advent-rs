@@ -1,5 +1,8 @@
 use advent::input_store;
 
+const YEAR: usize = 0;
+const DAY: usize = 0;
+
 fn main() {
     let input = input_store::get_input(YEAR, DAY);
 
