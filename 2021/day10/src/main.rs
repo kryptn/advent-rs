@@ -43,7 +43,6 @@ fn reduce_chunks(input: &str) -> NavigationStatus {
     NavigationStatus::Valid
 }
 
-
 fn score_incomplete(ns: NavigationStatus) -> u64 {
     let mut s = 0;
 

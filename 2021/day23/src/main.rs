@@ -1,15 +1,17 @@
 use std::{
     collections::{HashMap, HashSet, VecDeque},
+    marker::PhantomData,
     rc::Rc,
-    sync::Arc, marker::PhantomData,
+    sync::Arc,
 };
 
 use advent::input_store;
 use itertools::Itertools;
 use petgraph::{
     dot::{Config, Dot},
+    graph::Externals,
     graphmap::{DiGraphMap, UnGraphMap},
-    EdgeDirection::Outgoing, graph::Externals,
+    EdgeDirection::Outgoing,
 };
 
 #[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash)]
@@ -149,7 +151,6 @@ impl std::fmt::Debug for State {
 //             h1, h2, h4, h6, h8, h10, h11, a1, b1, c1, d1, a2, b2, c2, d2
 //         )
 
-
 //     }
 // }
 
@@ -278,28 +279,26 @@ fn build_graph() -> DiGraphMap<Room, (usize, Policy)> {
 
 //     }
 
-
 // }
 
-fn build_state_graph(initial: State, target: State, graph: &DiGraphMap<Room, (usize, Policy)>) -> DiGraphMap<State, usize> {
-    let mut state_graph :DiGraphMap<State, usize> = DiGraphMap::new();
+fn build_state_graph(
+    initial: State,
+    target: State,
+    graph: &DiGraphMap<Room, (usize, Policy)>,
+) -> DiGraphMap<State, usize> {
+    let mut state_graph: DiGraphMap<State, usize> = DiGraphMap::new();
     state_graph.add_node(initial);
 
     //let mut staged: VecDeque<_> = initial.valid_steps(graph).into();
 
     let mut path = vec![initial];
 
-    loop {
-        
-    }
-
-
+    loop {}
 
     loop {
         let mut saw = 0;
 
         for node in state_graph.nodes() {
-
             println!("{}, {}", state_graph.node_count(), state_graph.edge_count());
             if node == target {
                 continue;
@@ -312,13 +311,19 @@ fn build_state_graph(initial: State, target: State, graph: &DiGraphMap<Room, (us
                 }
             }
 
-            let next_valids = node.valid_steps(graph).iter().filter(|(_, n, _)| !state_graph.contains_node(*n)).collect();
-            for (this, next, cost) in next_valids {
-
-            }
+            let next_valids = node
+                .valid_steps(graph)
+                .iter()
+                .filter(|(_, n, _)| !state_graph.contains_node(*n))
+                .collect();
+            for (this, next, cost) in next_valids {}
 
             state_graph.add_edge(this, next, cost);
-            staged.extend(next.valid_steps(graph).iter().filter(|(_, n, _)| !state_graph.contains_node(*n)))
+            staged.extend(
+                next.valid_steps(graph)
+                    .iter()
+                    .filter(|(_, n, _)| !state_graph.contains_node(*n)),
+            )
         }
     }
 
@@ -330,7 +335,11 @@ fn build_state_graph(initial: State, target: State, graph: &DiGraphMap<Room, (us
         }
 
         state_graph.add_edge(this, next, cost);
-        staged.extend(next.valid_steps(graph).iter().filter(|(_, n, _)| !state_graph.contains_node(*n)))
+        staged.extend(
+            next.valid_steps(graph)
+                .iter()
+                .filter(|(_, n, _)| !state_graph.contains_node(*n)),
+        )
     }
 
     state_graph
@@ -357,18 +366,18 @@ fn main() {
 
     //println!("start:\n{}\n\n", state);
 
-
     let state_graph = build_state_graph(state, target, &graph);
     //println!("{:?}", Dot::with_config(&state_graph, &[Config::EdgeNoLabel]));
 
-    println!("state graph: {} nodes, {} edges", state_graph.node_count(), state_graph.edge_count());
-
+    println!(
+        "state graph: {} nodes, {} edges",
+        state_graph.node_count(),
+        state_graph.edge_count()
+    );
 
     // for (_, s, cost) in state.valid_steps(&graph) {
     //     println!("cost: {}\n{}\n\n", cost, s);
     // }
-
-
 
     //dbg!(state.valid_steps(&graph));
 

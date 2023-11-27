@@ -95,8 +95,7 @@ impl std::fmt::Display for Instruction {
                 "mul {} 0\nadd {} {}\nmul {} {}\nadd {} {}\nmul {} {}",
                 r, r, a, r, b, r, c, t, r
             ),
-            Instruction::Oper(a, b, c)=> write!(f, "oper z / {}, x + {}, y + {}", a, b, c),
-
+            Instruction::Oper(a, b, c) => write!(f, "oper z / {}, x + {}, y + {}", a, b, c),
         }
     }
 }
@@ -162,10 +161,10 @@ fn reduce_instructions(instructions: Vec<Instruction>) -> Vec<Instruction> {
 
     loop {
         let (_, _, _, _, a, b, _, _, _) = instructions.next_tuple().unwrap();
-        let ( _, _, _, _, _, _, c, _, _) = instructions.next_tuple().unwrap();
+        let (_, _, _, _, _, _, c, _, _) = instructions.next_tuple().unwrap();
 
         let oper = match (a, b, c) {
-            (Instruction:: Div(_, a), Instruction:: Add(_, b), Instruction:: Add(_,c ) ) => {
+            (Instruction::Div(_, a), Instruction::Add(_, b), Instruction::Add(_, c)) => {
                 let (a, b, c) = match (a, b, c) {
                     (Operand::Literal(a), Operand::Literal(b), Operand::Literal(c)) => (a, b, c),
                     _ => unreachable!(),
@@ -176,7 +175,6 @@ fn reduce_instructions(instructions: Vec<Instruction>) -> Vec<Instruction> {
             _ => unreachable!(),
         };
         out.push(oper);
-
 
         // let (_, _, _, _, a, b, _, _) = instructions.next_tuple().unwrap();
 
@@ -341,8 +339,8 @@ impl State {
 
                 let x = ((*z % 26) + b) != w;
                 *z = *z / a;
-                *z = *z * if x {26} else {1};
-                *z = *z + if x {w + c} else {0};
+                *z = *z * if x { 26 } else { 1 };
+                *z = *z + if x { w + c } else { 0 };
             }
         }
     }
@@ -433,8 +431,6 @@ fn part_1(input: &str) {
     let instructions = reduce_instructions(instructions);
     //dbg!(&instructions);
 
-
-
     // let handles = Arc::new(());
     // let counter = Arc::new(AtomicUsize::new(0));
 
@@ -499,8 +495,6 @@ fn part_1(input: &str) {
             println!("{}\n{}\n", state, candidate);
             break;
         }
-
-
     }
 }
 
@@ -510,13 +504,10 @@ fn part_1_take_2(input: &str) {
 
     let instruction = instructions.first().unwrap();
     for i in 1..=9 {
-
         let mut state = State::new(vec![i]);
         state.apply(instruction);
         println!("{} => \n{}\n", i, state);
     }
-
-
 }
 
 fn binary_example() {

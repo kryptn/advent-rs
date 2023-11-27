@@ -47,9 +47,7 @@ pub enum Instruction {
 }
 
 impl Instruction {
-    fn toggle(self) -> Self {
-
-    }
+    fn toggle(self) -> Self {}
 }
 
 impl From<&str> for Instruction {
@@ -165,17 +163,12 @@ impl machine::Apply<Instruction> for State {
                 memory: self.memory.clone(),
                 ptr: self.ptr + 1,
             },
-            Instruction::ToggledCopy(value, reg, ) => {
-
-                Self {
-
-                    instructions: self.instructions.clone(),
-                    memory: self.memory.clone(),
-                    ptr: self.ptr + 1,
-                }
+            Instruction::ToggledCopy(value, reg) => Self {
+                instructions: self.instructions.clone(),
+                memory: self.memory.clone(),
+                ptr: self.ptr + 1,
             },
             Instruction::ToggledJumpNotZero(_, _) => todo!(),
-
         }
     }
 }

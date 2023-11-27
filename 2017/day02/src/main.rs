@@ -9,12 +9,11 @@ fn mod_checksum(values: &Vec<u32>) -> u32 {
     for x in values {
         for y in values {
             if x > y && x % y == 0 {
-                return x / y
+                return x / y;
             }
         }
     }
-    return 0
-
+    return 0;
 }
 
 fn parse_input(input: &str) -> Vec<Vec<u32>> {
@@ -40,7 +39,6 @@ fn mod_checksum_input(input: &str) -> u32 {
     let total = value.iter().map(|vs| mod_checksum(vs)).sum();
     total
 }
-
 
 fn main() {
     let input = input_store::get_input(2017, 02);
@@ -72,7 +70,7 @@ mod test {
         assert_eq!(checksum_input(given), expected);
     }
 
-const example2: &str = r#"5 9 2 8
+    const example2: &str = r#"5 9 2 8
 9 4 7 3
 3 8 6 5"#;
 

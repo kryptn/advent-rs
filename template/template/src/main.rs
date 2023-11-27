@@ -6,7 +6,6 @@ const DAY: usize = 0;
 fn main() {
     let input = input_store::get_input(YEAR, DAY);
 
-
     println!("part_1 => {}", "not done");
     println!("part_2 => {}", "not done");
 }

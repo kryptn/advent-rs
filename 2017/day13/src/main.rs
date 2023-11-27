@@ -3,10 +3,7 @@ use std::collections::HashMap;
 use advent::input_store;
 use itertools::Itertools;
 
-fn check_scanners(
-    scanners: &Vec<(usize, usize)>,
-    delay: usize,
-) -> (usize, bool) {
+fn check_scanners(scanners: &Vec<(usize, usize)>, delay: usize) -> (usize, bool) {
     // println!("checking with delay {}:", delay);
     let mut caught = false;
     let sev = scanners

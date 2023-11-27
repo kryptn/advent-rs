@@ -100,8 +100,6 @@ fn main() {
         *polymer.get_mut(&element).unwrap() += 1;
     }
 
-
-
     for _ in 0..10 {
         insert(&mut polymer, &rules);
     }

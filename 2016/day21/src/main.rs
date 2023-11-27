@@ -112,9 +112,7 @@ fn main() {
     dbg!(instructions);
 }
 
-fn apply_inst(chars: Vec<char>, inst: Instruction) -> Vec<char> {
-
-}
+fn apply_inst(chars: Vec<char>, inst: Instruction) -> Vec<char> {}
 
 struct Scrambler {
     original: String,
@@ -130,9 +128,7 @@ impl<'a> Scrambler {
         }
     }
 
-    fn apply_instruction(&mut self, instruction: Instruction) {
-
-    }
+    fn apply_instruction(&mut self, instruction: Instruction) {}
 }
 
 #[cfg(test)]
@@ -156,6 +152,4 @@ mod test {
     fn p2_tests(#[case] given: &str, #[case] expected: &str) {
         assert_eq!(given, expected);
     }
-
-    
 }

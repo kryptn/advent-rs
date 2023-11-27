@@ -2,8 +2,8 @@ use std::collections::{HashMap, HashSet};
 
 use advent::input_store;
 use advent_toolbox::hashers::knot::{self, KnotHasher};
-use advent_toolbox::utils::{neighbors, adjacent};
-use petgraph::algo::{kosaraju_scc, connected_components};
+use advent_toolbox::utils::{adjacent, neighbors};
+use petgraph::algo::{connected_components, kosaraju_scc};
 use petgraph::prelude::DiGraph;
 use petgraph::{prelude::UnGraph, stable_graph::NodeIndex};
 
@@ -15,7 +15,7 @@ fn normalize((x, y): &(u32, u32)) -> u32 {
 fn denormalize(idx: u32) -> (u32, u32) {
     let y = idx / 128;
     let rem = idx - (y * 128);
-    return (rem, y)
+    return (rem, y);
 }
 
 fn settle((a, b): (u32, u32)) -> (u32, u32) {
@@ -25,8 +25,6 @@ fn settle((a, b): (u32, u32)) -> (u32, u32) {
         (a, b)
     }
 }
-
-
 
 fn main() {
     let input = input_store::get_input(2017, 14).trim().to_string();

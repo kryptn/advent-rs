@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use advent::{
-    grid::{print_grid, Coordinate, Grid, bounding_box, iter_rows},
+    grid::{bounding_box, iter_rows, print_grid, Coordinate, Grid},
     input_store,
 };
 
@@ -17,7 +17,6 @@ struct PrintableBool(bool);
 
 impl std::fmt::Display for Image {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-
         let mut grid = String::new();
 
         let (lower, upper) = bounding_box(&self.points);
@@ -31,7 +30,6 @@ impl std::fmt::Display for Image {
                     grid.push('#');
                 } else {
                     grid.push('.');
-
                 }
             }
             grid.push('\n');
@@ -66,7 +64,6 @@ impl Image {
         for candidate in candidates {
             let mut idx = 0;
             for neighbor in candidate.grid_around() {
-
                 let value = {
                     if let Some(value) = self.points.get(&neighbor) {
                         value.0
@@ -78,7 +75,6 @@ impl Image {
                 if value {
                     idx += 1;
                 }
-
 
                 idx <<= 1;
             }
@@ -96,7 +92,10 @@ impl Image {
     }
 
     fn lit(&self) -> usize {
-        self.points.iter().filter(|(_, v)| v.0 == (self.iteration % 2 == 0)).count()
+        self.points
+            .iter()
+            .filter(|(_, v)| v.0 == (self.iteration % 2 == 0))
+            .count()
     }
 }
 
@@ -107,8 +106,6 @@ impl From<String> for Image {
         let mut mask = [false; 512];
 
         for (i, c) in lookup.trim().chars().enumerate() {
-
-
             mask[i] = c == '#';
         }
 

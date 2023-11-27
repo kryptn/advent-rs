@@ -4,7 +4,6 @@ use advent::input_store;
 use advent_toolbox::hashers::knot::KnotHasher;
 use itertools::Itertools;
 
-
 fn main() {
     let input = input_store::get_input(2017, 10);
     // let input = "3,4,1,5";

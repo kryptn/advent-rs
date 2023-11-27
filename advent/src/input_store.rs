@@ -38,6 +38,15 @@ pub struct Selector {
     pub day: usize,
 }
 
+impl From<(usize, usize)> for Selector {
+    fn from(t: (usize, usize)) -> Self {
+        Self {
+            year: t.0,
+            day: t.1,
+        }
+    }
+}
+
 impl Selector {
     pub fn filename(&self) -> PathBuf {
         let mut input_filename = input_cache_dir();
