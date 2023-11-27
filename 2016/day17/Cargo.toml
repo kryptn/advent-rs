@@ -7,8 +7,10 @@ edition = "2018"
 
 [dependencies]
 advent = { path = "../../advent", features = ["parse"] }
+advent-toolbox = { path = "../../advent-toolbox" }
 md5 = "0.7.0"
 rstest = "0.11.0"
 anyhow = "1.0.43"
 itertools = "0.10.1"
 nom = "7.0.0"
+lazy_static = "1.4.0"
