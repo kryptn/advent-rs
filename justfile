@@ -34,9 +34,15 @@ prebuild-year year:
 
 year_default := ""
 fmt-all year=year_default:
+    #!/usr/bin/env sh
     path="**/Cargo.toml"
     if [ year != "" ]; then
         path="{{year}}/**/Cargo.toml"
     fi
 
     rg -g '**/Cargo.toml' --files | xargs -I{} cargo fmt --manifest-path {}
+
+run year day:
+    #!/usr/bin/env sh
+    DAY=$(printf "day%02d" {{day}})
+    cargo run --manifest-path {{year}}/$DAY/Cargo.toml

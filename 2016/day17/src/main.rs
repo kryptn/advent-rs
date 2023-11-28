@@ -11,7 +11,7 @@ const DIRECTIONS: [Direction; 4] = [
 ];
 
 lazy_static::lazy_static! {
-    static ref GRID: HashSet<Coordinate> = coordinates_within((0, 0).into(), (4, 4).into()).into_iter().collect();
+    static ref GRID: HashSet<Coordinate> = coordinates_within((0, 0).into(), (3, 3).into()).into_iter().collect();
 }
 
 fn digest(input: &str) -> String {
@@ -19,43 +19,104 @@ fn digest(input: &str) -> String {
     format!("{:x}", d)
 }
 
+#[derive(Debug, Clone)]
 struct Step {
     position: Coordinate,
     password: String,
+    path: String,
 }
 
 impl Step {
     fn branches(&self) -> Vec<Self> {
-        let mut out = vec![];
-        let digest = digest(&self.password);
+        let password = format!("{}{}", self.password, self.path);
+        let digest = digest(&password);
         let digest = digest.chars().map(|ch| match ch {
-            'b' | 'c' | 'd' | 'f' => true,
+            'b' | 'c' | 'd' | 'e' | 'f' => true,
             _ => false,
         });
 
         let out = DIRECTIONS
             .iter()
             .zip(digest)
-            .filter(|(dir, open)| GRID.contains(self.position + dir) && *open)
-            .map(|(dir, _)| {
-                let ns = self.clone();
-                self.position + *dir
-            })
+            .filter(|(dir, open)| GRID.contains(&(self.position + **dir)) && *open)
+            .map(|(dir, _)| self.with_direction(*dir))
             .collect();
 
         out
+    }
+
+    fn with_direction(&self, direction: Direction) -> Self {
+        let position = self.position + direction;
+
+        let dir_chr = match direction {
+            Direction::Up => 'U',
+            Direction::Down => 'D',
+            Direction::Left => 'L',
+            Direction::Right => 'R',
+            Direction::None => panic!("No direction"),
+        };
+
+        let path = format!("{}{}", self.path, dir_chr);
+        Self {
+            position,
+            password: self.password.clone(),
+            path,
+        }
+    }
+
+    fn find_path(&self, goal: Coordinate) -> String {
+        let mut candiates = vec![self.clone()];
+        loop {
+            let mut next_candidates = vec![];
+            for candidate in candiates {
+                let branches = candidate.branches();
+                next_candidates.extend(branches);
+            }
+
+            for nc in next_candidates.iter() {
+                if nc.position == goal {
+                    return nc.path.clone();
+                }
+            }
+
+            candiates = next_candidates;
+        }
     }
 }
 
 fn main() {
     let input = input_store::get_input(2016, 17).trim().to_string();
 
+    // println!("{:?}", GRID.clone());
+    // let input: String = "ihgpwlah".to_string();
+
     let first_step = Step {
         position: (0, 3).into(),
         password: input.clone(),
+        path: "".into(),
     };
 
-    first_step.branches();
+    // let path: String = first_step.find_path().unwrap();
+
+    // let mut candiates = vec![first_step];
+    // 'outer: loop {
+    //     let mut next_candidates = vec![];
+    //     for candidate in candiates {
+    //         let branches = candidate.branches();
+    //         next_candidates.extend(branches);
+    //     }
+
+    //     for nc in next_candidates.iter() {
+    //         if nc.position == (3, 0).into() {
+    //             println!("part_1 => {}", nc.path);
+    //             break 'outer;
+    //         }
+    //     }
+
+    //     candiates = next_candidates;
+    // }
+    let path = first_step.find_path((3, 0).into());
+    println!("part_1 => {}", path);
 }
 
 #[cfg(test)]
@@ -69,9 +130,18 @@ mod test {
     }
 
     #[rstest]
-    #[case("ADVENT", "ADVENT")]
+    #[case("ihgpwlah", "DDRRRD")]
+    #[case("kglvqrro", "DDUDRLRRUDRD")]
+    #[case("ulqzkmiv", "DRURDRUDDLLDLUURRDULRLDUUDDDRR")]
     fn p1_tests(#[case] given: &str, #[case] expected: &str) {
-        assert_eq!(given, expected);
+        let start = Step {
+            position: (0, 3).into(),
+            password: given.to_string(),
+            path: "".into(),
+        };
+
+        let path = start.find_path((3, 0).into());
+        assert_eq!(path, expected);
     }
 
     #[rstest]
