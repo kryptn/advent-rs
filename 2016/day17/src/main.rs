@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{collections::HashSet};
 
 use advent::input_store;
 use advent_toolbox::spatial::{coordinates_within, Coordinate, Direction};
@@ -82,6 +82,35 @@ impl Step {
             candiates = next_candidates;
         }
     }
+
+    fn find_longest_path(&self, goal: Coordinate) -> usize {
+        let mut candiates = vec![self.clone()];
+        let mut longest = 0;
+
+        loop {
+            let mut next_candidates = vec![];
+            for candidate in candiates {
+                let branches = candidate.branches();
+                for branch in branches.into_iter() {
+                    if branch.position == goal {
+                        if branch.path.len() > longest {
+                            longest = branch.path.len();
+                        }
+                    } else {
+                        next_candidates.push(branch);
+                    }
+                }
+            }
+
+            if next_candidates.is_empty() {
+                break;
+            }
+
+            candiates = next_candidates;
+        }
+
+        longest
+    }
 }
 
 fn main() {
@@ -117,6 +146,9 @@ fn main() {
     // }
     let path = first_step.find_path((3, 0).into());
     println!("part_1 => {}", path);
+
+    let longest = first_step.find_longest_path((3, 0).into());
+    println!("part_2 => {}", longest);
 }
 
 #[cfg(test)]
@@ -145,8 +177,17 @@ mod test {
     }
 
     #[rstest]
-    #[case("ADVENT", "ADVENT")]
-    fn p2_tests(#[case] given: &str, #[case] expected: &str) {
-        assert_eq!(given, expected);
+    #[case("ihgpwlah", 370)]
+    #[case("kglvqrro", 492)]
+    #[case("ulqzkmiv", 830)]
+    fn p2_tests(#[case] given: &str, #[case] expected: usize) {
+        let start = Step {
+            position: (0, 3).into(),
+            password: given.to_string(),
+            path: "".into(),
+        };
+
+        let longest = start.find_longest_path((3, 0).into());
+        assert_eq!(longest, expected);
     }
 }
