@@ -12,6 +12,7 @@ Optionally, set the `AOC_CONFIG` environment variable to customize where inputs 
 
 All inputs will be saved to `$AOC_CONFIG/input/$year/$day/input`
 
+Cookie gets stored in `$AOC_CONFIG/.cookie`
 
 ## usage
 
@@ -56,9 +57,9 @@ fn main() {
 
 # other tools
 
-make a new day with `./day.sh YEAR DAY` eg. `./day.sh 2015 1`
+make a new day with `./day.sh YEAR DAY` eg. `./day.sh 2015 1` or with the justfile, `just generate-day YEAR DAY`
 
 
 ## cleanup
 
-format all projects: `rg -lg 'Cargo.toml' . -a | xargs -n 1 cargo fmt --manifest-path `
+format all projects: `rg -lg 'Cargo.toml' . -a | xargs -n 1 cargo fmt --manifest-path` or `just fmt-all`
