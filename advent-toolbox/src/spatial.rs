@@ -34,6 +34,15 @@ impl<P: Point, T> Space<P, T> {
     }
 }
 
+impl<P, T> From<Vec<(P, T)>> for Space<P, T>
+where
+    P: Point + Hash + Eq,
+{
+    fn from(input: Vec<(P, T)>) -> Self {
+        Self(input.into_iter().collect())
+    }
+}
+
 pub trait Traversable<P: Point> {
     fn connected(&self, start: &P, end: &P) -> bool;
 }
@@ -76,6 +85,10 @@ impl Coordinate {
             (*self, self.down()),
             (*self, self.left()),
         ]
+    }
+
+    pub fn distance(&self, other: &Self) -> usize {
+        ((self.x - other.x).abs() + (self.y - other.y).abs()) as usize
     }
 }
 
