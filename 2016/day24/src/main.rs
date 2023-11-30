@@ -128,7 +128,23 @@ fn main() {
         .collect();
 
     println!("part_1 => {}", all_paths.first().unwrap().0);
-    println!("part_2 => {}", "not done");
+
+    let all_paths_and_back: Vec<(usize, Vec<usize>)> = (1..=max)
+        .permutations(max)
+        .map(|p| {
+            let mut prev = 0;
+            let mut total = 0;
+            for n in &p {
+                total += distances[&prev][n] - 1;
+                prev = *n;
+            }
+            total += distances[&prev][&0] - 1;
+            (total, p)
+        })
+        .sorted_by(|a, b| a.0.cmp(&b.0))
+        .collect();
+
+    println!("part_2 => {}", all_paths_and_back.first().unwrap().0);
 }
 
 #[cfg(test)]
