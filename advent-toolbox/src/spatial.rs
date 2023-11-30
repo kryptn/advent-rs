@@ -1,11 +1,11 @@
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{HashMap, HashSet, VecDeque},
     error::Error,
     hash::Hash,
     ops::{Add, Mul, Sub},
 };
 
-use itertools::Itertools;
+use itertools::{Itertools, TakeWhileInclusive};
 
 pub trait Point {}
 
@@ -43,8 +43,8 @@ where
     }
 }
 
-pub trait Traversable<P: Point> {
-    fn connected(&self, start: &P, end: &P) -> bool;
+pub trait Traversable {
+    fn is_traversable(&self) -> bool;
 }
 
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
@@ -317,6 +317,105 @@ impl<V> Space<Coordinate, V> {
 
         out.into_iter().collect()
     }
+
+    // pub fn path(&self, start: Coordinate, end: Coordinate) -> Vec<Coordinate>
+    // where
+    //     V: Traversable,
+    // {
+    //     let mut paths = VecDeque::from(vec![vec![start]]);
+    //     // let mut found_paths = Vec::new();
+
+    //     while paths.len() > 0 {
+    //         paths = paths.into_iter().sorted_by(|a, b| {
+    //             let a_dist = a.last().unwrap().distance(&end);
+    //             let b_dist = b.last().unwrap().distance(&end);
+
+    //             let a_hurestic = a_dist + a.len();
+    //             let b_hurestic = b_dist + b.len();
+
+    //             a_hurestic.cmp(&b_hurestic)
+    //         }).collect();
+
+    //         let this = paths.pop_front().unwrap();
+    //         let last = this.last().unwrap().clone();
+
+    //         // println!("path_len: {}, dist from end: {}", this.len(), end.distance(&last));
+
+    //         let candidates: Vec<Coordinate> = last
+    //         .cardinals()
+    //         .into_iter()
+    //         .filter(|c| {
+    //             if let Some(value) = self.get(c) {
+    //                 !this.contains(c) && value.is_traversable()
+    //             } else {
+    //                 false
+    //             }
+    //         })
+    //         .collect();
+    //         for candidate in candidates {
+    //             let mut new_path = this.clone();
+    //             new_path.push(candidate);
+    //             if candidate == end {
+    //                 return new_path;
+    //                 // found_paths.push(new_path);
+    //             } else {
+    //                 paths.push_back(new_path);
+    //             }
+    //         }
+    //     }
+
+    //     vec![]
+    //     // found_paths.sort_by(|a, b| a.len().cmp(&b.len()));
+    //     // found_paths.first().unwrap().clone()
+    // }
+
+    pub fn a_star(&self, start: &Coordinate, goal: &Coordinate) -> Option<Vec<Coordinate>>
+    where
+        V: Traversable,
+    {
+        let mut frontier = VecDeque::new();
+        frontier.push_back(*start);
+
+        let mut came_from = HashMap::new();
+        came_from.insert(*start, *start);
+
+        let mut cost_so_far = HashMap::new();
+        cost_so_far.insert(*start, 0);
+
+        while let Some(current) = frontier.pop_front() {
+            if current == *goal {
+                break;
+            }
+
+            for next in current.cardinals().iter() {
+                if let Some(value) = self.get(next) {
+                    if !value.is_traversable() {
+                        continue;
+                    }
+                } else {
+                    continue;
+                }
+
+                let new_cost = cost_so_far[&current] + 1;
+                if !cost_so_far.contains_key(next) || new_cost < cost_so_far[next] {
+                    cost_so_far.insert(*next, new_cost);
+                    let priority = new_cost + next.distance(goal);
+                    frontier.push_back(*next);
+                    came_from.insert(*next, current);
+                }
+            }
+        }
+
+        let mut current = *goal;
+        let mut path = vec![current];
+        while current != *start {
+            current = came_from[&current];
+            path.push(current);
+        }
+        path.reverse();
+
+        Some(path)
+    }
 }
 
 impl<V> std::fmt::Display for Space<Coordinate, V>
@@ -519,6 +618,30 @@ where
             .map(|(z, s)| format!("z: {z}\n{s}\n---"))
             .join("\n\n");
         write!(f, "{planes}")
+    }
+}
+
+impl<P, V> Space<P, V>
+where
+    P: Point + Clone,
+{
+    pub fn find(&self, f: impl Fn(&V) -> bool) -> Option<P> {
+        for (k, v) in self.iter() {
+            if f(v) {
+                return Some(k.clone());
+            }
+        }
+        None
+    }
+
+    pub fn find_all(&self, f: impl Fn(&V) -> bool) -> Vec<P> {
+        let mut out = Vec::new();
+        for (k, v) in self.iter() {
+            if f(v) {
+                out.push(k.clone());
+            }
+        }
+        out
     }
 }
 
