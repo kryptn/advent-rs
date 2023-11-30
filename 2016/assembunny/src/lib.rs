@@ -38,16 +38,41 @@ pub enum Value {
 #[derive(Clone, Debug)]
 pub enum Instruction {
     Copy(Value, Register),
-    ToggledJumpNotZero(Value, Register),
+    InvalidJumpNotZero(Value, Register),
     Increment(Register),
+    InvalidIncrement(Value),
     Decrement(Register),
+    InvalidDecrement(Value),
     JumpNotZero(Value, Value),
-    ToggledCopy(Value, Value),
+    InvalidCopy(Value, Value),
     Toggle(Value),
 }
 
 impl Instruction {
-    fn toggle(self) -> Self {}
+    fn toggle(self) -> Self {
+        match self {
+            Instruction::Copy(v, r) => Instruction::JumpNotZero(v, Value::Register(r)),
+            Instruction::InvalidCopy(v, r) => Instruction::JumpNotZero(v, r),
+
+            Instruction::Increment(r) => Instruction::Decrement(r),
+            Instruction::Decrement(r) => Instruction::Increment(r),
+
+            Instruction::InvalidIncrement(v) => Instruction::InvalidDecrement(v),
+            Instruction::InvalidDecrement(v) => Instruction::InvalidIncrement(v),
+
+            Instruction::JumpNotZero(v, r) => match r {
+                Value::Register(rr) => Instruction::Copy(v, rr),
+                Value::Value(rv) => Instruction::InvalidCopy(v, Value::Value(rv)),
+            },
+            Instruction::InvalidCopy(v, r) => Instruction::JumpNotZero(v, r),
+            Instruction::InvalidJumpNotZero(v, r) => Instruction::Copy(v, r),
+
+            Instruction::Toggle(v) => match v {
+                Value::Register(r) => Instruction::Increment(r),
+                Value::Value(v) => Instruction::InvalidIncrement(Value::Value(v)),
+            },
+        }
+    }
 }
 
 impl From<&str> for Instruction {
@@ -93,10 +118,18 @@ impl State {
         memory
     }
 
-    pub fn step(self) -> Option<Self> {
+    pub fn step(&self) -> Option<Self> {
         let inst = self.instructions.get(self.ptr)?;
         let next_state = self.apply(inst.to_owned());
         Some(next_state)
+    }
+
+    pub fn run(self) -> Self {
+        let mut state = self;
+        while let Some(next_state) = state.step() {
+            state = next_state;
+        }
+        state
     }
 }
 
@@ -158,17 +191,27 @@ impl machine::Apply<Instruction> for State {
                     self.ptr + 1
                 },
             },
-            Instruction::Toggle(offset) => Self {
-                instructions: self.instructions.clone().toggle(self.get_value(offset)),
-                memory: self.memory.clone(),
-                ptr: self.ptr + 1,
-            },
-            Instruction::ToggledCopy(value, reg) => Self {
+            Instruction::Toggle(offset) => {
+                let mut instructions = self.instructions.clone();
+                let target_idx = self.ptr + self.get_value(offset) as usize;
+                if target_idx < instructions.len() {
+                    instructions[target_idx] = instructions[target_idx].clone().toggle();
+                }
+                Self {
+                    instructions,
+                    memory: self.memory.clone(),
+                    ptr: self.ptr + 1,
+                }
+            }
+
+            Instruction::InvalidCopy(_, _)
+            | Instruction::InvalidDecrement(_)
+            | Instruction::InvalidIncrement(_)
+            | Instruction::InvalidJumpNotZero(_, _) => Self {
                 instructions: self.instructions.clone(),
                 memory: self.memory.clone(),
                 ptr: self.ptr + 1,
             },
-            Instruction::ToggledJumpNotZero(_, _) => todo!(),
         }
     }
 }
@@ -217,13 +260,8 @@ fn parse_dec(input: &str) -> IResult<&str, Instruction> {
 }
 
 fn parse_tgl(input: &str) -> IResult<&str, Instruction> {
-    let (input, (_, v)) = tuple((ws(tag("tgl")), parse_value))(input)?;
-
-    if let Value::Value(_) = v {
-        Ok((input, Instruction::Toggle(v)))
-    } else {
-        unreachable!()
-    }
+    let (input, (_, v)) = tuple((ws(tag("tgl")), parse_operand))(input)?;
+    Ok((input, Instruction::Toggle(v)))
 }
 
 fn parse_jnz(input: &str) -> IResult<&str, Instruction> {
@@ -232,7 +270,7 @@ fn parse_jnz(input: &str) -> IResult<&str, Instruction> {
 }
 
 fn parse_inst(input: &str) -> IResult<&str, Instruction> {
-    alt((parse_cpy, parse_inc, parse_dec, parse_jnz))(input)
+    alt((parse_cpy, parse_inc, parse_dec, parse_jnz, parse_tgl))(input)
 }
 
 #[cfg(test)]
