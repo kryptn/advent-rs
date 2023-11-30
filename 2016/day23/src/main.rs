@@ -11,10 +11,16 @@ fn main() {
     // dec a
     // dec a"#.to_string();
 
-    let mut machine: State = input.into();
+    let mut machine: State = input.clone().into();
     machine.memory.entry(Register::A).and_modify(|v| *v = 7);
     let exhausted = machine.run();
     println!("part_1 => {}", exhausted.memory[&Register::A]);
+
+    println!("part 2 takes about five minutes");
+    let mut machine: State = input.into();
+    machine.memory.entry(Register::A).and_modify(|v| *v = 12);
+    let exhausted = machine.run();
+    println!("part_2 => {}", exhausted.memory[&Register::A]);
 }
 
 #[cfg(test)]
