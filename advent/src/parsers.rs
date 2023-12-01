@@ -6,7 +6,7 @@ use nom::{
     combinator::{opt, value},
     error::ParseError,
     sequence::delimited,
-    IResult,
+    IResult, branch::alt,
 };
 
 /// A combinator that takes a parser `inner` and produces a parser that also consumes both leading and
@@ -57,6 +57,26 @@ pub fn parse_coordinate(input: &str) -> IResult<&str, crate::grid::Coordinate> {
     let (input, right) = ws(parse_num)(input)?;
 
     Ok((input, crate::grid::Coordinate::new(left, right)))
+}
+
+pub fn parse_number_word(input: &str) -> IResult<&str, char> {
+
+    let (input, num) = alt((tag("zero"), tag("one"), tag("two"), tag("three"), tag("four"), tag("five"), tag("six"), tag("seven"), tag("eight"), tag("nine")))(input)?;
+    let num = match num {
+        "zero" => '0',
+        "one" => '1',
+        "two" => '2',
+        "three" => '3',
+        "four" => '4',
+        "five" => '5',
+        "six" => '6',
+        "seven" => '7',
+        "eight" => '8',
+        "nine" => '9',
+        _ => panic!("unknown number word: {}", num),
+    };
+
+    Ok((input, num))
 }
 
 #[cfg(test)]
