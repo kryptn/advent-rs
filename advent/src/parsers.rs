@@ -60,7 +60,6 @@ pub fn parse_coordinate(input: &str) -> IResult<&str, crate::grid::Coordinate> {
 }
 
 pub fn parse_number_word(input: &str) -> IResult<&str, char> {
-
     let (input, num) = alt((tag("zero"), tag("one"), tag("two"), tag("three"), tag("four"), tag("five"), tag("six"), tag("seven"), tag("eight"), tag("nine")))(input)?;
     let num = match num {
         "zero" => '0',
@@ -73,6 +72,25 @@ pub fn parse_number_word(input: &str) -> IResult<&str, char> {
         "seven" => '7',
         "eight" => '8',
         "nine" => '9',
+        _ => panic!("unknown number word: {}", num),
+    };
+
+    Ok((input, num))
+}
+
+pub fn parse_number_word_reversed(input: &str) -> IResult<&str, char> {
+    let (input, num) = alt((tag("orez"), tag("eno"), tag("owt"), tag("eerht"), tag("ruof"), tag("evif"), tag("xis"), tag("neves"), tag("thgie"), tag("enin")))(input)?;
+    let num = match num {
+        "orez" => '0',
+        "eno" => '1',
+        "owt" => '2',
+        "eerht" => '3',
+        "ruof" => '4',
+        "evif" => '5',
+        "xis" => '6',
+        "neves" => '7',
+        "thgie" => '8',
+        "enin" => '9',
         _ => panic!("unknown number word: {}", num),
     };
 

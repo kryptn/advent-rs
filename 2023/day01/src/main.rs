@@ -1,13 +1,8 @@
 use advent::{
     input_store,
-    parsers::{parse_num, parse_number_word},
+    parsers::{parse_number_word, parse_number_word_reversed},
 };
-use nom::{
-    branch::alt,
-    character::complete::{digit1, one_of},
-    multi::many1,
-    IResult,
-};
+use nom::{branch::alt, character::complete::one_of, IResult};
 
 const YEAR: usize = 2023;
 const DAY: usize = 1;
@@ -20,29 +15,47 @@ fn maybe_parse_num(input: &str) -> IResult<&str, Option<char>> {
     }
 }
 
-fn parse_line(orig: &str) -> IResult<&str, Vec<usize>> {
-    let mut out = Vec::new();
+fn maybe_parse_num_reversed(input: &str) -> IResult<&str, Option<char>> {
+    if let Ok((input, value)) = alt((parse_number_word_reversed, one_of("0123456789")))(input) {
+        Ok((input, Some(value)))
+    } else {
+        Ok((&input[1..], None))
+    }
+}
 
-    let mut input = orig;
-    while input.len() > 0 {
-        let (i, num) = maybe_parse_num(input)?;
-
-        input = i;
-        if let Some(num) = num {
-            let d = num.to_digit(10).unwrap() as usize;
-            out.push(d);
-        }
+fn parse_first_num(input: &str) -> IResult<&str, char> {
+    let (mut input, mut value) = maybe_parse_num(input)?;
+    while value.is_none() {
+        (input, value) = maybe_parse_num(input)?;
     }
 
-    // dbg!(orig, &out);
+    Ok((input, value.unwrap()))
+}
 
-    Ok((input, out))
+fn parse_last_num(input: &str) -> IResult<&str, char> {
+    let (mut input, mut value) = maybe_parse_num_reversed(input)?;
+    while value.is_none() {
+        (input, value) = maybe_parse_num_reversed(input)?;
+    }
+
+    Ok((input, value.unwrap()))
+}
+
+fn parse_line(orig: &str) -> IResult<&str, usize> {
+    let (_, first) = parse_first_num(orig)?;
+
+    let reversed_line = orig.chars().rev().collect::<String>();
+    let (_, last) = parse_last_num(&reversed_line).unwrap();
+
+    let out_str = format!("{}{}", first, last);
+    let out = out_str.parse::<usize>().unwrap();
+    Ok(("", out))
 }
 
 fn main() {
     let input = input_store::get_input(YEAR, DAY);
     // let input = r#"1abc2
-    // pqr3stu8vwx
+    // pqr3stu8vwxca
     // a1b2c3d4e5f
     // treb7uchet"#;
 
@@ -51,7 +64,6 @@ fn main() {
         .lines()
         .map(|l| l.trim().chars().filter_map(|c| c.to_digit(10)).collect())
         .collect();
-    // dbg!(&digits);
 
     let mut part_1 = 0;
     for line in digits {
@@ -62,15 +74,7 @@ fn main() {
     }
     println!("part_1 => {}", part_1);
 
-    // let input = r#"two1nine
-    // eightwothree
-    // abcone2threexyz
-    // xtwone3four
-    // 4nineeightseven2
-    // zoneight234
-    // 7pqrstsixteen"#;
-
-    let digits: Vec<Vec<_>> = input
+    let part_2: usize = input
         .trim()
         .lines()
         .enumerate()
@@ -79,15 +83,8 @@ fn main() {
             println!("{}: {}\n  {:?}\n\n", i, l, parsed);
             parsed
         })
-        .collect();
+        .sum();
 
-    let mut part_2 = 0;
-    for line in digits {
-        let first_digit = line[0];
-        let last_digit = line[line.len() - 1];
-        let number = (first_digit * 10) + last_digit;
-        part_2 += number;
-    }
     println!("part_2 => {}", part_2);
 }
 
