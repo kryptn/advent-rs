@@ -33,6 +33,22 @@ impl Hand {
     }
 }
 
+struct Game(Vec<Hand>);
+
+impl Game {
+    fn power_set(&self) -> usize {
+        let mut red = 0;
+        let mut blue = 0;
+        let mut green = 0;
+        for hand in &self.0 {
+            red = red.max(hand.red);
+            blue = blue.max(hand.blue);
+            green = green.max(hand.green);
+        }
+        red * blue * green
+    }
+}
+
 fn parse_color(input: &str) -> IResult<&str, Hand> {
     let (input, count) = digit1(input)?;
     let (input, color) = alt((ws(tag("red")), ws(tag("blue")), ws(tag("green"))))(input)?;
@@ -102,7 +118,12 @@ fn main() {
         .sum::<usize>();
 
     println!("part_1 => {}", part_1);
-    println!("part_2 => {}", "not done");
+
+    let part_2 = items
+        .into_iter()
+        .map(|(_, hands)| Game(hands).power_set())
+        .sum::<usize>();
+    println!("part_2 => {}", part_2);
 }
 
 #[cfg(test)]
