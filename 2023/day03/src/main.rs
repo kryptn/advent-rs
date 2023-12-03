@@ -14,6 +14,15 @@ struct Part {
     valid: bool,
 }
 
+impl From<char> for Part {
+    fn from(value: char) -> Self {
+        Self {
+            value,
+            valid: false,
+        }
+    }
+}
+
 impl Part {
     fn is_number(&self) -> bool {
         "0123456789".contains(self.value)
@@ -33,15 +42,6 @@ impl std::fmt::Display for Part {
             } else {
                 write!(f, "{}", self.value)
             }
-        }
-    }
-}
-
-impl From<char> for Part {
-    fn from(value: char) -> Self {
-        Self {
-            value,
-            valid: false,
         }
     }
 }
@@ -66,7 +66,6 @@ fn convert_number(digits: Vec<Coordinate>, engine: &Space<Coordinate, Part>) -> 
 
 fn extract_numbers(space: &Space<Coordinate, Part>) -> Vec<(i32, Vec<Coordinate>)> {
     let mut out = vec![];
-
     let mut numbers = vec![];
 
     for row in space.rows() {
@@ -88,7 +87,6 @@ fn extract_numbers(space: &Space<Coordinate, Part>) -> Vec<(i32, Vec<Coordinate>
             numbers = vec![];
         }
     }
-
     out
 }
 
@@ -169,8 +167,6 @@ fn main() {
             }
         })
         .sum::<i32>();
-
-    // dbg!(gears);
 
     println!("part_2 => {}", ratio_sum);
 }
