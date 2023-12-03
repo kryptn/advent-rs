@@ -78,6 +78,19 @@ impl Coordinate {
         [self.up(), self.right(), self.down(), self.left()]
     }
 
+    pub fn neighbors(&self) -> [Self; 8] {
+        [
+            self.up(),
+            self.up().right(),
+            self.right(),
+            self.right().down(),
+            self.down(),
+            self.down().left(),
+            self.left(),
+            self.left().up(),
+        ]
+    }
+
     pub fn zip_cardinals(&self) -> [(Self, Self); 4] {
         [
             (*self, self.up()),
@@ -270,6 +283,7 @@ where
     }
 }
 
+
 impl<V> Space<Coordinate, V> {
     pub fn bounding_box(&self) -> (Coordinate, Coordinate) {
         let mut x_set = HashSet::new();
@@ -318,57 +332,6 @@ impl<V> Space<Coordinate, V> {
         out.into_iter().collect()
     }
 
-    // pub fn path(&self, start: Coordinate, end: Coordinate) -> Vec<Coordinate>
-    // where
-    //     V: Traversable,
-    // {
-    //     let mut paths = VecDeque::from(vec![vec![start]]);
-    //     // let mut found_paths = Vec::new();
-
-    //     while paths.len() > 0 {
-    //         paths = paths.into_iter().sorted_by(|a, b| {
-    //             let a_dist = a.last().unwrap().distance(&end);
-    //             let b_dist = b.last().unwrap().distance(&end);
-
-    //             let a_hurestic = a_dist + a.len();
-    //             let b_hurestic = b_dist + b.len();
-
-    //             a_hurestic.cmp(&b_hurestic)
-    //         }).collect();
-
-    //         let this = paths.pop_front().unwrap();
-    //         let last = this.last().unwrap().clone();
-
-    //         // println!("path_len: {}, dist from end: {}", this.len(), end.distance(&last));
-
-    //         let candidates: Vec<Coordinate> = last
-    //         .cardinals()
-    //         .into_iter()
-    //         .filter(|c| {
-    //             if let Some(value) = self.get(c) {
-    //                 !this.contains(c) && value.is_traversable()
-    //             } else {
-    //                 false
-    //             }
-    //         })
-    //         .collect();
-    //         for candidate in candidates {
-    //             let mut new_path = this.clone();
-    //             new_path.push(candidate);
-    //             if candidate == end {
-    //                 return new_path;
-    //                 // found_paths.push(new_path);
-    //             } else {
-    //                 paths.push_back(new_path);
-    //             }
-    //         }
-    //     }
-
-    //     vec![]
-    //     // found_paths.sort_by(|a, b| a.len().cmp(&b.len()));
-    //     // found_paths.first().unwrap().clone()
-    // }
-
     pub fn a_star(&self, start: &Coordinate, goal: &Coordinate) -> Option<Vec<Coordinate>>
     where
         V: Traversable,
@@ -415,6 +378,22 @@ impl<V> Space<Coordinate, V> {
         path.reverse();
 
         Some(path)
+    }
+
+    pub fn rows(&self) -> impl Iterator<Item = impl Iterator<Item = (Coordinate, &V)>> {
+        let (lower, upper) = self.bounding_box();
+        let mut out = Vec::new();
+        for y in lower.y..=upper.y {
+            let mut row = Vec::new();
+            for x in lower.x..=upper.x {
+                let coord = (x, y).into();
+                if let Some(value) = self.get(&coord) {
+                    row.push((coord, value));
+                }
+            }
+            out.push(row.into_iter());
+        }
+        out.into_iter()
     }
 }
 
