@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use colored::Colorize;
 
@@ -115,7 +115,7 @@ fn main() {
     let numbers = extract_numbers(&engine);
     // dbg!(&numbers);
 
-    let valid_numbers: Vec<_> = numbers
+    let valid_numbers: Vec<(i32, Vec<Coordinate>)> = numbers
         .iter()
         .filter_map(|(number, coords)| {
             let surrounding_coords = coords
@@ -133,19 +133,46 @@ fn main() {
                     engine.get_mut(c).unwrap().valid = true;
                 }
 
-                Some(*number)
+                Some((*number, surrounding_coords.into_iter().collect()))
             } else {
                 None
             }
         })
         .collect();
 
-    let valid_sum = valid_numbers.iter().sum::<i32>();
-
-    println!("engine:\n\n{}", engine);
+    let valid_sum = valid_numbers.iter().map(|(n, _)| n).sum::<i32>();
+    // println!("engine:\n\n{}", engine);
 
     println!("part_1 => {}", valid_sum);
-    println!("part_2 => {}", "not done");
+
+    let mut gears: HashMap<Coordinate, Vec<i32>> = engine
+        .iter()
+        .filter(|(_, part)| part.value == '*')
+        .map(|(coord, _)| (*coord, Vec::new()))
+        .collect();
+
+    for (number, coords) in valid_numbers {
+        for coord in coords {
+            if gears.contains_key(&coord) {
+                gears.get_mut(&coord).unwrap().push(number);
+            }
+        }
+    }
+
+    let ratio_sum = gears
+        .values()
+        .filter_map(|v| {
+            if v.len() == 2 {
+                Some(v[0] * v[1])
+            } else {
+                None
+            }
+        })
+        .sum::<i32>();
+
+    // dbg!(gears);
+
+    println!("part_2 => {}", ratio_sum);
 }
 
 #[cfg(test)]
