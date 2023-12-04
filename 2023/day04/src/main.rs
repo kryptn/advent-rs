@@ -1,7 +1,4 @@
-use std::{
-    borrow::BorrowMut,
-    collections::{HashMap, HashSet, VecDeque},
-};
+use std::collections::{HashMap, HashSet};
 
 use advent::{input_store, parsers::ws};
 use nom::{bytes::complete::tag, character::complete::digit1, multi::many1, IResult};
