@@ -1,4 +1,7 @@
-use std::collections::HashSet;
+use std::{
+    borrow::BorrowMut,
+    collections::{HashMap, HashSet, VecDeque},
+};
 
 use advent::{input_store, parsers::ws};
 use nom::{bytes::complete::tag, character::complete::digit1, multi::many1, IResult};
@@ -22,6 +25,10 @@ impl Card {
             2u32.pow(self.winning.intersection(&self.selected).count() as u32 - 1)
         }
     }
+
+    fn matches(&self) -> u32 {
+        self.winning.intersection(&self.selected).count() as u32
+    }
 }
 
 fn parse_numbers(input: &str) -> IResult<&str, Vec<u32>> {
@@ -34,7 +41,7 @@ fn parse_numbers(input: &str) -> IResult<&str, Vec<u32>> {
 
 fn parse_card(input: &str) -> IResult<&str, Card> {
     let (input, _) = tag("Card")(input)?;
-    let (input, num) = ws(digit1)(input)?;
+    let (input, _) = ws(digit1)(input)?;
     let (input, _) = tag(": ")(input)?;
     let (input, winning) = parse_numbers(input)?;
     let (input, _) = tag("|")(input)?;
@@ -47,6 +54,23 @@ fn parse_card(input: &str) -> IResult<&str, Card> {
             selected: selected.into_iter().collect(),
         },
     ))
+}
+
+fn part_2(cards: &Vec<Card>) -> u32 {
+    let mut collection: HashMap<usize, u32> = HashMap::new();
+    for x in 0..cards.len() {
+        collection.insert(x, 1);
+    }
+
+    for (num, card) in cards.iter().enumerate() {
+        let start = num + 1;
+        let count = collection.get(&num).unwrap().clone();
+        for idx in start..start + card.matches() as usize {
+            *collection.entry(idx).or_insert(1) += 1 * count;
+        }
+    }
+
+    collection.values().sum()
 }
 
 fn main() {
@@ -65,12 +89,8 @@ fn main() {
         .collect();
     let winnings = cards.iter().map(|card| card.score()).sum::<u32>();
 
-    // for card in cards {
-    //     println!("{:?}, {}", card, card.score());
-    // }
-
     println!("part_1 => {}", winnings);
-    println!("part_2 => {}", "not done");
+    println!("part_2 => {}", part_2(&cards));
 }
 
 #[cfg(test)]
