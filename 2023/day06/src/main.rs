@@ -34,6 +34,17 @@ impl From<(usize, usize)> for Race {
     }
 }
 
+struct Races(Vec<Race>);
+
+impl Races {
+    fn winnings(&self) -> usize {
+        self.0
+            .iter()
+            .map(|r| r.winning_times().len())
+            .fold(1, |acc, x| acc * x)
+    }
+}
+
 fn parse_line(input: &str) -> IResult<&str, Vec<usize>> {
     let (input, _) = take_until(":")(input)?;
     let (input, _) = tag(":")(input)?;
@@ -45,32 +56,33 @@ fn parse_line(input: &str) -> IResult<&str, Vec<usize>> {
     Ok((input, numbers))
 }
 
+impl From<&String> for Races {
+    fn from(value: &String) -> Self {
+        let lines: Vec<_> = value
+            .trim()
+            .lines()
+            .map(|l| parse_line(l.trim()).unwrap().1)
+            .collect();
+        let races = lines[0]
+            .iter()
+            .zip(lines[1].iter())
+            .map(|(&t, &r)| Race::from((t, r)))
+            .collect();
+        Self(races)
+    }
+}
+
 fn main() {
     let input = input_store::get_input(YEAR, DAY);
     // let input = r#"Time:      7  15   30
-    // Distance:  9  40  200"#;
+    // Distance:  9  40  200"#.to_string();
 
-    let lines: Vec<_> = input
-        .trim()
-        .lines()
-        .map(|l| parse_line(l.trim()).unwrap().1)
-        .collect();
-    let races: Vec<_> = lines[0]
-        .iter()
-        .zip(lines[1].iter())
-        .map(|(&t, &r)| Race::from((t, r)))
-        .collect();
+    let races = Races::from(&input);
+    println!("part_1 => {}", races.winnings());
 
-    dbg!(&races);
-
-    let winnings = races
-        .iter()
-        .map(|r| r.winning_times().len())
-        .fold(1, |acc, x| acc * x);
-
-    println!("part_1 => {}", winnings);
-
-    println!("part_2 => {}", "not done");
+    let input = input.replace(" ", "");
+    let races = Races::from(&input);
+    println!("part_2 => {}", races.winnings());
 }
 
 #[cfg(test)]
