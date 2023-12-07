@@ -1,71 +1,24 @@
-use std::{cmp::Ordering, collections::HashSet, ffi::c_short};
-
 use advent::input_store;
 use itertools::Itertools;
 
 const YEAR: usize = 2023;
 const DAY: usize = 7;
 
-#[derive(Eq, PartialEq, Hash, Debug, Clone, PartialOrd, Ord)]
-struct Card(u8);
-
-impl std::fmt::Display for Card {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let value = match self.0 {
-            1 => "J".to_string(),
-            2..=9 => format!("{}", self.0),
-            10 => "T".to_string(),
-            11 => "J".to_string(),
-            12 => "Q".to_string(),
-            13 => "K".to_string(),
-            14 => "A".to_string(),
-            _ => panic!("Invalid card: {}", self.0),
-        };
-        write!(f, "{}", value)
-    }
-}
-
-impl From<char> for Card {
-    fn from(value: char) -> Self {
-        match value {
-            'J' => Card(1),
-            '2' => Card(2),
-            '3' => Card(3),
-            '4' => Card(4),
-            '5' => Card(5),
-            '6' => Card(6),
-            '7' => Card(7),
-            '8' => Card(8),
-            '9' => Card(9),
-            'T' => Card(10),
-            // 'J' => Card(11),
-            'Q' => Card(12),
-            'K' => Card(13),
-            'A' => Card(14),
-            _ => panic!("Invalid card: {}", value),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
 enum Rank {
-    HighCard,
-    OnePair,
-    TwoPair,
-    ThreeOfAKind,
-    // Straight,
-    // Flush,
-    FullHouse,
-    FourOfAKind,
-    FiveOfAKind,
-    // StraightFlush,
-    // RoyalFlush,
+    Zero = 0,
+    HighCard = 1,
+    OnePair = 2,
+    TwoPair = 3,
+    ThreeOfAKind = 4,
+    FullHouse = 5,
+    FourOfAKind = 6,
+    FiveOfAKind = 7,
 }
 
-impl From<Hand> for Rank {
-    fn from(value: Hand) -> Self {
-        let counts = value.cards.iter().counts();
-        // println!("value: \"{}\", set: {:?}", value, counts);
+impl From<String> for Rank {
+    fn from(hand: String) -> Self {
+        let counts = hand.chars().counts();
         match counts.len() {
             5 => Rank::HighCard,
             4 => Rank::OnePair,
@@ -89,152 +42,143 @@ impl From<Hand> for Rank {
     }
 }
 
-#[derive(Eq, Hash, Debug, Clone)]
-struct Hand {
-    cards: Vec<Card>,
-    sorted_cards: Vec<Card>,
-    bet: usize,
-}
-
-impl std::fmt::Display for Hand {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let cards = self
-            .cards
-            .iter()
-            .map(|c| format!("{}", c))
-            .collect::<Vec<_>>()
-            .join("");
-
-        let sorted_cards = self
-            .sorted_cards
-            .iter()
-            .map(|c| format!("{}", c))
-            .collect::<Vec<_>>()
-            .join("");
-        write!(
-            f,
-            "{} {} {}   \t {}",
-            cards,
-            sorted_cards,
-            self.bet,
-            self.rank()
-        )
-    }
-}
-
-impl From<String> for Hand {
-    fn from(value: String) -> Self {
-        let mut parts = value.trim().split(" ");
-        let cards: Vec<Card> = parts.next().unwrap().chars().map(|c| c.into()).collect();
-        let sorted_cards = cards.iter().cloned().sorted().rev().collect();
-        let bet = parts.next().unwrap().parse::<usize>().unwrap();
-        Self {
-            cards,
-            sorted_cards,
-            bet,
+fn rank_from_hand_joker(hand: &str) -> Rank {
+    let mut max_rank = Rank::Zero;
+    for alt in "23456789TQKA".chars() {
+        let cards = hand.replace("J", &alt.to_string());
+        let rank = Rank::from(cards);
+        if rank > max_rank {
+            max_rank = rank;
         }
     }
+    max_rank
 }
 
-impl PartialEq for Hand {
-    fn eq(&self, other: &Self) -> bool {
-        self.sorted_cards == other.sorted_cards
-    }
+fn parse_hand(line: String) -> (String, usize) {
+    let mut parts = line.trim().split(" ");
+    let hand = parts.next().unwrap().to_string();
+    let bet = parts.next().unwrap().to_string();
+    (hand, bet.parse::<usize>().unwrap())
 }
 
-impl PartialOrd for Hand {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(&other))
-    }
-}
+#[derive(Debug, Clone, Eq, Hash)]
+struct Part1Sort(String);
 
-impl Ord for Hand {
-    fn cmp(&self, other: &Self) -> Ordering {
-        match self.rank().cmp(&other.rank()) {
-            Ordering::Equal => self.cards.cmp(&other.cards),
-            other => other,
-        }
-    }
-}
-impl Hand {
-    fn rank(&self) -> usize {
-        let r = Rank::from(self.clone());
-        match r {
-            Rank::HighCard => 1,
-            Rank::OnePair => 2,
-            Rank::TwoPair => 3,
-            Rank::ThreeOfAKind => 4,
-            Rank::FullHouse => 5,
-            Rank::FourOfAKind => 6,
-            Rank::FiveOfAKind => 7,
-        }
-    }
-
-    fn level_up(&self) -> usize {
-        let hand = self.cards.iter().join("");
-        let mut max_rank = 0;
-        for alt in "23456789TQKA".chars() {
-            let cards = hand.replace("J", &alt.to_string());
-            let hand = Hand::from(format!("{} {}", cards, self.bet));
-            if hand.rank() > max_rank {
-                max_rank = hand.rank();
+impl Part1Sort {
+    fn sortable(&self) -> Vec<usize> {
+        let mut out = vec![];
+        for c in self.0.chars() {
+            match c {
+                'A' => out.push(14),
+                'K' => out.push(13),
+                'Q' => out.push(12),
+                'J' => out.push(11),
+                'T' => out.push(10),
+                _ => out.push(c.to_string().parse::<usize>().unwrap()),
             }
-        };
-        max_rank
+        }
+        out
     }
 }
 
-fn print_hands(hands: &Vec<Hand>) {
-    for hand in hands {
-        println!("{} {:?}", hand, Rank::from(hand.clone()));
+impl PartialOrd for Part1Sort {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.sortable().cmp(&other.sortable()))
     }
-    println!("");
+}
+
+impl PartialEq for Part1Sort {
+    fn eq(&self, other: &Self) -> bool {
+        self.sortable() == other.sortable()
+    }
+}
+
+impl Ord for Part1Sort {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        other.sortable().cmp(&self.sortable())
+        // self.sortable().cmp(&other.sortable())
+    }
+}
+
+#[derive(Debug, Clone, Eq, Hash)]
+
+struct Part2Sort(String);
+impl Part2Sort {
+    fn sortable(&self) -> Vec<usize> {
+        let mut out = vec![];
+        for c in self.0.chars() {
+            match c {
+                'J' => out.push(1),
+                'A' => out.push(14),
+                'K' => out.push(13),
+                'Q' => out.push(12),
+                'T' => out.push(10),
+                _ => out.push(c.to_string().parse::<usize>().unwrap()),
+            }
+        }
+        out
+    }
+}
+
+impl PartialOrd for Part2Sort {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.sortable().cmp(&other.sortable()))
+    }
+}
+
+impl PartialEq for Part2Sort {
+    fn eq(&self, other: &Self) -> bool {
+        self.sortable() == other.sortable()
+    }
+}
+
+impl Ord for Part2Sort {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        other.sortable().cmp(&self.sortable())
+        // self.sortable().cmp(&other.sortable())
+    }
 }
 
 fn main() {
     let input = input_store::get_input(YEAR, DAY);
-
     // let input = r#"32T3K 765
     // T55J5 684
     // KK677 28
     // KTJJT 220
     // QQQJA 483"#;
 
-    let hands: Vec<Hand> = input
+    let hands = input
         .trim()
         .lines()
-        .map(|line| line.trim().to_string().into())
+        .map(|line| parse_hand(line.to_string()))
         .collect::<Vec<_>>();
-    print_hands(&hands);
 
-    // let new_hands = hands.iter().cloned().map(|h| (h.rank(), h.sorted_cards, h.bet)).sorted().collect::<Vec<_>>();
-
-    let new_hands = hands.iter().cloned().sorted().collect::<Vec<_>>();
-    // dbg!(&new_hands);
-    print_hands(&new_hands);
-
-    let scores = new_hands
+    let sorted_part_1 = hands
         .iter()
-        .enumerate()
-        .map(|(i, h)| h.bet * (i + 1))
-        .sum::<usize>();
-
-    println!("part_1 => {}", scores);
-
-    let joker_hands = hands
-        .iter()
-        .cloned()
-        .map(|h| (h.level_up(), h.cards, h.bet))
+        .map(|(hand, bet)| (Rank::from(hand.clone()), Part1Sort(hand.clone()), *bet))
         .sorted()
         .collect::<Vec<_>>();
-
-    let scores = joker_hands
+    // println!("{:?}", sorted_part_1);
+    let part_1 = sorted_part_1
         .iter()
         .enumerate()
-        .map(|(i, h)| h.2 * (i + 1))
+        .map(|(i, item)| (i + 1) * item.2)
         .sum::<usize>();
 
-    println!("part_2 => {}", scores);
+    println!("part_1 => {}", part_1);
+
+    let sorted_part_2 = hands
+        .iter()
+        .map(|(hand, bet)| (rank_from_hand_joker(hand), Part2Sort(hand.clone()), *bet))
+        .sorted()
+        .collect::<Vec<_>>();
+    // println!("{:?}", sorted_part_2);
+    let part_2 = sorted_part_2
+        .iter()
+        .enumerate()
+        .map(|(i, item)| (i + 1) * item.2)
+        .sum::<usize>();
+    println!("part_2 => {}", part_2);
 }
 
 #[cfg(test)]
