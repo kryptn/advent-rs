@@ -61,13 +61,16 @@ fn parse_hand(line: String) -> (String, usize) {
     (hand, bet.parse::<usize>().unwrap())
 }
 
-#[derive(Debug, Clone, Eq, Hash)]
+#[derive(Debug, Clone, Eq, Hash, PartialEq, Ord, PartialOrd)]
+struct Sortable(Vec<usize>);
+
+#[derive(Debug, Clone)]
 struct Part1Sort(String);
 
-impl Part1Sort {
-    fn sortable(&self) -> Vec<usize> {
+impl From<Part1Sort> for Sortable {
+    fn from(input: Part1Sort) -> Self {
         let mut out = vec![];
-        for c in self.0.chars() {
+        for c in input.0.chars() {
             match c {
                 'A' => out.push(14),
                 'K' => out.push(13),
@@ -77,36 +80,17 @@ impl Part1Sort {
                 _ => out.push(c.to_string().parse::<usize>().unwrap()),
             }
         }
-        out
+        Self(out)
     }
 }
 
-impl PartialOrd for Part1Sort {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.sortable().cmp(&other.sortable()))
-    }
-}
-
-impl PartialEq for Part1Sort {
-    fn eq(&self, other: &Self) -> bool {
-        self.sortable() == other.sortable()
-    }
-}
-
-impl Ord for Part1Sort {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        other.sortable().cmp(&self.sortable())
-        // self.sortable().cmp(&other.sortable())
-    }
-}
-
-#[derive(Debug, Clone, Eq, Hash)]
-
+#[derive(Debug, Clone)]
 struct Part2Sort(String);
-impl Part2Sort {
-    fn sortable(&self) -> Vec<usize> {
+
+impl From<Part2Sort> for Sortable {
+    fn from(input: Part2Sort) -> Self {
         let mut out = vec![];
-        for c in self.0.chars() {
+        for c in input.0.chars() {
             match c {
                 'J' => out.push(1),
                 'A' => out.push(14),
@@ -116,26 +100,7 @@ impl Part2Sort {
                 _ => out.push(c.to_string().parse::<usize>().unwrap()),
             }
         }
-        out
-    }
-}
-
-impl PartialOrd for Part2Sort {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.sortable().cmp(&other.sortable()))
-    }
-}
-
-impl PartialEq for Part2Sort {
-    fn eq(&self, other: &Self) -> bool {
-        self.sortable() == other.sortable()
-    }
-}
-
-impl Ord for Part2Sort {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        other.sortable().cmp(&self.sortable())
-        // self.sortable().cmp(&other.sortable())
+        Self(out)
     }
 }
 
@@ -153,28 +118,32 @@ fn main() {
         .map(|line| parse_hand(line.to_string()))
         .collect::<Vec<_>>();
 
-    let sorted_part_1 = hands
+    let part_1 = hands
         .iter()
-        .map(|(hand, bet)| (Rank::from(hand.clone()), Part1Sort(hand.clone()), *bet))
+        .map(|(hand, bet)| {
+            (
+                Rank::from(hand.clone()),
+                Sortable::from(Part1Sort(hand.clone())),
+                *bet,
+            )
+        })
         .sorted()
-        .collect::<Vec<_>>();
-    // println!("{:?}", sorted_part_1);
-    let part_1 = sorted_part_1
-        .iter()
         .enumerate()
         .map(|(i, item)| (i + 1) * item.2)
         .sum::<usize>();
 
     println!("part_1 => {}", part_1);
 
-    let sorted_part_2 = hands
+    let part_2 = hands
         .iter()
-        .map(|(hand, bet)| (rank_from_hand_joker(hand), Part2Sort(hand.clone()), *bet))
+        .map(|(hand, bet)| {
+            (
+                rank_from_hand_joker(hand),
+                Sortable::from(Part2Sort(hand.clone())),
+                *bet,
+            )
+        })
         .sorted()
-        .collect::<Vec<_>>();
-    // println!("{:?}", sorted_part_2);
-    let part_2 = sorted_part_2
-        .iter()
         .enumerate()
         .map(|(i, item)| (i + 1) * item.2)
         .sum::<usize>();
