@@ -1,7 +1,6 @@
 use advent::input_store;
-use core::hash::Hash;
 use num::Integer;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 const YEAR: usize = 2023;
 const DAY: usize = 8;
@@ -16,21 +15,20 @@ fn follow(start: &String, dir: char, nodes: &HashMap<String, (String, String)>) 
 }
 
 fn parse_input(input: &str) -> (String, HashMap<String, (String, String)>) {
-    let input = input.trim().split("\n\n").collect::<Vec<_>>();
-    let directions = input.first().unwrap().trim();
-    let nodes = input
+    let input = input
+        .replace("(", "")
+        .replace(")", "")
+        .replace(",", "")
+        .replace("=", "");
+    let sections = input.trim().split("\n\n").collect::<Vec<_>>();
+    let directions = sections.first().unwrap().trim();
+    let nodes = sections
         .last()
         .unwrap()
         .trim()
         .lines()
         .map(|l| {
-            let l = l
-                .trim()
-                .replace("(", "")
-                .replace(")", "")
-                .replace(",", "")
-                .replace("=", "");
-            let parts = l.split_ascii_whitespace().collect::<Vec<_>>();
+            let parts = l.trim().split_ascii_whitespace().collect::<Vec<_>>();
             (
                 parts[0].to_string(),
                 (parts[1].to_string(), parts[2].to_string()),
@@ -92,7 +90,6 @@ fn main() {
             let mut last_found_delta = 0;
 
             let mut node = k.clone();
-            let mut loop_count = 0;
 
             for (idx, dir) in directions.chars().cycle().enumerate() {
                 let next = follow(&node, dir, &nodes);
@@ -103,21 +100,15 @@ fn main() {
                     let delta = idx - last_found_idx;
                     last_found_idx = idx;
 
-                    if delta == last_found_delta && loop_count > 2 {
+                    if delta == last_found_delta {
                         break;
                     } else {
                         last_found_delta = delta;
                     }
-                    if delta == last_found_delta {
-                        loop_count += 1;
-                    } else {
-                        loop_count = 0;
-                    }
                 }
                 node = next;
             }
-            let out = (k.clone(), (first_found_idx, last_found_delta));
-            out
+            (k.clone(), (first_found_idx, last_found_delta))
         })
         .collect();
 
