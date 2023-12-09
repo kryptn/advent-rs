@@ -34,21 +34,6 @@ fn find_next_item(items: Vec<isize>) -> isize {
     sequences.first().unwrap().last().unwrap().clone()
 }
 
-fn find_prev_item(items: Vec<isize>) -> isize {
-    let mut sequences = vec![items];
-    while !is_base_velocity(sequences.last().unwrap()) {
-        sequences.push(deltas(sequences.last().unwrap()));
-    }
-    for idx in (0..(sequences.len() - 1)).rev() {
-        let lowest_first = sequences[idx + 1].first().unwrap().clone();
-        let this_first = sequences[idx].first().unwrap().clone();
-        sequences[idx].push(this_first - lowest_first);
-        sequences[idx].rotate_right(1);
-    }
-
-    sequences.first().unwrap().first().unwrap().clone()
-}
-
 fn parse_sequence(line: &str) -> Vec<isize> {
     line.trim()
         .split_ascii_whitespace()
@@ -68,7 +53,7 @@ fn main() {
 
     let part_2 = sequences
         .iter()
-        .map(|s| find_prev_item(s.clone()))
+        .map(|s| find_next_item(s.iter().rev().cloned().collect::<Vec<_>>().clone()))
         .sum::<isize>();
     println!("part_2 => {}", part_2);
 }
@@ -96,7 +81,7 @@ mod test {
     #[case("10  13  16  21  30  45", 5)]
     fn p2_tests(#[case] given: &str, #[case] expected: isize) {
         let seq = parse_sequence(given);
-        let prev = find_prev_item(seq);
+        let prev = find_next_item(seq.iter().rev().cloned().collect::<Vec<_>>());
         assert_eq!(prev, expected);
     }
 }
