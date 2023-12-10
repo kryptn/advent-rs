@@ -224,7 +224,7 @@ impl Network {
         let mut queue: VecDeque<_> = vec![from].into_iter().collect();
 
         while let Some(coord) = queue.pop_front() {
-            println!("{}", coord);
+            // println!("{}", coord);
             let this = self.space.get(&coord).unwrap().clone();
             let this_distance = self.distance_map.get(&coord).unwrap().clone();
             let valid_paths: Vec<_> = this
@@ -252,7 +252,7 @@ impl Network {
 
     fn traverse_outer(&mut self) {
         let (lower, upper) = self.space.bounding_box();
-        dbg!(&lower, &upper);
+        // dbg!(&lower, &upper);
         let lower = (lower.x - 1, lower.y - 1).into();
         let upper = (upper.x + 1, upper.y + 1).into();
         let mut queue: VecDeque<_> = coordinates_within(lower, upper)
@@ -350,15 +350,15 @@ fn main() {
 
     let farthest = network.distance_map.values().max().unwrap();
 
-    println!("{}", network.space);
+    // println!("{}", network.space);
     println!("part_1 => {}", farthest);
 
     let mut new_network = network.expand();
     new_network.traverse_outer();
-    println!("{}", new_network.space);
+    // println!("{}", new_network.space);
 
     let new_new = new_network.collapse();
-    println!("{}", new_new.space);
+    // println!("{}", new_new.space);
 
     let inner = new_new.space.values().filter(|s| !s.traversed).count();
     println!("part_2 => {}", inner);
