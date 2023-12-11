@@ -283,7 +283,6 @@ where
     }
 }
 
-
 impl<V> Space<Coordinate, V> {
     pub fn bounding_box(&self) -> (Coordinate, Coordinate) {
         let mut x_set = HashSet::new();
@@ -392,6 +391,22 @@ impl<V> Space<Coordinate, V> {
                 }
             }
             out.push(row.into_iter());
+        }
+        out.into_iter()
+    }
+
+    pub fn columns(&self) -> impl Iterator<Item = impl Iterator<Item = (Coordinate, &V)>> {
+        let (lower, upper) = self.bounding_box();
+        let mut out = Vec::new();
+        for x in lower.x..=upper.x {
+            let mut columns = Vec::new();
+            for y in lower.y..=upper.y {
+                let coord = (x, y).into();
+                if let Some(value) = self.get(&coord) {
+                    columns.push((coord, value));
+                }
+            }
+            out.push(columns.into_iter());
         }
         out.into_iter()
     }
