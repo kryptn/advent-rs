@@ -36,84 +36,75 @@ impl From<char> for Sector {
     }
 }
 
-fn expand_row(space: &Space<Coordinate, Sector>) -> Space<Coordinate, Sector> {
+fn expand_row(space: &Space<Coordinate, Sector>, expand_by: isize) -> Space<Coordinate, Sector> {
     let mut out = vec![];
     let mut offset = 0;
 
     for row in space.rows() {
-        let row: Vec<(Coordinate, Sector)> = row.map(|(c, &v)| (c, v)).collect();
+        let row: Vec<Coordinate> = row
+            .filter_map(|(c, &v)| {
+                if v == Sector::Galaxy {
+                    Some(c + Coordinate::new(0, offset))
+                } else {
+                    None
+                }
+            })
+            .collect();
 
-        out.extend(
-            row.iter()
-                .cloned()
-                .map(|(c, v)| (c + Coordinate::new(0, offset), v)),
-        );
-
-        if row.iter().all(|x| x.1 == Sector::Empty) {
-            offset += 1;
-            out.extend(
-                row.iter()
-                    .cloned()
-                    .map(|(c, v)| (c + Coordinate::new(0, offset), v)),
-            );
+        if row.is_empty() {
+            offset += expand_by;
+            continue;
         }
+
+        out.extend(row);
     }
 
-    out.into_iter().collect()
+    out.into_iter().map(|c| (c, Sector::Galaxy)).collect()
 }
 
-fn expand_columns(space: &Space<Coordinate, Sector>) -> Space<Coordinate, Sector> {
+fn expand_columns(
+    space: &Space<Coordinate, Sector>,
+    expand_by: isize,
+) -> Space<Coordinate, Sector> {
     let mut out = vec![];
     let mut offset = 0;
 
     for column in space.columns() {
-        let column: Vec<(Coordinate, Sector)> = column.map(|(c, &v)| (c, v)).collect();
+        let column: Vec<Coordinate> = column
+            .filter_map(|(c, &v)| {
+                if v == Sector::Galaxy {
+                    Some(c + Coordinate::new(offset, 0))
+                } else {
+                    None
+                }
+            })
+            .collect();
 
-        out.extend(
-            column
-                .iter()
-                .cloned()
-                .map(|(c, v)| (c + Coordinate::new(offset, 0), v)),
-        );
-
-        if column.iter().all(|x| x.1 == Sector::Empty) {
-            offset += 1;
-            out.extend(
-                column
-                    .iter()
-                    .cloned()
-                    .map(|(c, v)| (c + Coordinate::new(offset, 0), v)),
-            );
+        if column.is_empty() {
+            offset += expand_by;
+            continue;
         }
+
+        out.extend(column);
     }
 
-    out.into_iter().collect()
+    out.into_iter().map(|c| (c, Sector::Galaxy)).collect()
 }
 
 fn main() {
     let input = input_store::get_input(YEAR, DAY);
-    //     let input = r#"...#......
-    // .......#..
-    // #.........
-    // ..........
-    // ......#...
-    // .#........
-    // .........#
-    // ..........
-    // .......#..
-    // #...#....."#
-    //         .to_string();
+    //     let inputctring();
 
     let input = input.as_str();
     let space: Space<Coordinate, Sector> = Space::from(input);
 
     // println!("before expansion:\n{}", space);
-    let space = expand_row(&space);
-    let space = expand_columns(&space);
+    let spacep1 = expand_row(&space, 1);
+    let spacep1 = expand_columns(&spacep1, 1);
 
     // println!("after expansion:\n{}", space);
 
-    let part_1: usize = space
+    let part_1: usize = spacep1
         .iter()
         .filter_map(|(c, &v)| if v == Sector::Galaxy { Some(c) } else { None })
         .tuple_combinations::<(_, _)>()
@@ -121,7 +112,20 @@ fn main() {
         .sum();
 
     println!("part_1 => {}", part_1);
-    println!("part_2 => {}", "not done");
+
+    // println!("before expansion:\n{}", space);
+    let spacep2 = expand_row(&space, 1000000 - 1);
+    let spacep2 = expand_columns(&spacep2, 1000000 - 1);
+
+    // println!("after expansion:\n{}", space);
+
+    let part_2: usize = spacep2
+        .iter()
+        .filter_map(|(c, &v)| if v == Sector::Galaxy { Some(c) } else { None })
+        .tuple_combinations::<(_, _)>()
+        .map(|(a, b)| a.distance(b))
+        .sum();
+    println!("part_2 => {}", part_2);
 }
 
 #[cfg(test)]
