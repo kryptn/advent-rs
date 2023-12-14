@@ -53,6 +53,11 @@ pub struct Coordinate {
     pub y: isize,
 }
 
+pub const UP: Coordinate = Coordinate { x: 0, y: 1 };
+pub const DOWN: Coordinate = Coordinate { x: 0, y: -1 };
+pub const LEFT: Coordinate = Coordinate { x: -1, y: 0 };
+pub const RIGHT: Coordinate = Coordinate { x: 1, y: 0 };
+
 impl Coordinate {
     pub fn new(x: isize, y: isize) -> Self {
         Self { x, y }
@@ -103,6 +108,46 @@ impl Coordinate {
     pub fn distance(&self, other: &Self) -> usize {
         ((self.x - other.x).abs() + (self.y - other.y).abs()) as usize
     }
+
+    pub fn folded_at(&self, line: &Self) -> Self {
+        assert!(line.x == 0 || line.y == 0);
+        if line.x > 0 {
+            let pivot = line.x;
+            if self.x <= pivot {
+                *self
+            } else {
+                let half: isize = self.x - pivot;
+                (self.x - half * 2 + 1, self.y).into()
+            }
+        } else {
+            let pivot = line.y;
+            if self.y <= pivot {
+                *self
+            } else {
+                let half = self.y - pivot;
+                (self.x, self.y - half * 2 + 1).into()
+            }
+        }
+    }
+
+    pub fn normalize(&self) -> Self {
+        let x = if self.x > 0 {
+            1
+        } else if self.x < 0 {
+            -1
+        } else {
+            0
+        };
+        let y = if self.y > 0 {
+            1
+        } else if self.y < 0 {
+            -1
+        } else {
+            0
+        };
+
+        (x, y).into()
+    }
 }
 
 impl std::fmt::Display for Coordinate {
@@ -116,6 +161,14 @@ impl Add<Coordinate> for Coordinate {
 
     fn add(self, rhs: Coordinate) -> Self::Output {
         ((self.x + rhs.x), (self.y + rhs.y)).into()
+    }
+}
+
+impl Sub<Coordinate> for Coordinate {
+    type Output = Self;
+
+    fn sub(self, rhs: Coordinate) -> Self::Output {
+        ((self.x - rhs.x), (self.y - rhs.y)).into()
     }
 }
 
@@ -283,6 +336,35 @@ where
     }
 }
 
+impl<V> std::str::FromStr for Space<Coordinate, V>
+where
+    V: From<char>,
+{
+    type Err = Box<dyn Error>;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self::from(s))
+    }
+}
+
+impl<V> From<&String> for Space<Coordinate, V>
+where
+    V: From<char>,
+{
+    fn from(input: &String) -> Self {
+        Self::from(input.as_str())
+    }
+}
+
+impl<V> From<String> for Space<Coordinate, V>
+where
+    V: From<char>,
+{
+    fn from(input: String) -> Self {
+        Self::from(input.as_str())
+    }
+}
+
 impl<V> Space<Coordinate, V> {
     pub fn bounding_box(&self) -> (Coordinate, Coordinate) {
         let mut x_set = HashSet::new();
@@ -409,6 +491,34 @@ impl<V> Space<Coordinate, V> {
             out.push(columns.into_iter());
         }
         out.into_iter()
+    }
+
+    pub fn x_bounds(&self) -> (isize, isize) {
+        let (lower, upper) = self.bounding_box();
+        (lower.x, upper.x)
+    }
+
+    pub fn y_bounds(&self) -> (isize, isize) {
+        let (lower, upper) = self.bounding_box();
+        (lower.y, upper.y)
+    }
+
+    pub fn bisect_at(&self, line: &Coordinate) -> (Self, Self)
+    where
+        V: Clone,
+    {
+        let mut left_or_top = Self::new();
+        let mut right_or_bottom = Self::new();
+
+        for (coord, value) in self.iter() {
+            if (line.x > 0 && coord.x > line.x) || (line.y > 0 && coord.y > line.y) {
+                right_or_bottom.insert(*coord, value.clone());
+            } else {
+                left_or_top.insert(*coord, value.clone());
+            }
+        }
+
+        (left_or_top, right_or_bottom)
     }
 }
 
@@ -641,6 +751,8 @@ where
 
 #[cfg(test)]
 mod test {
+    use rstest::rstest;
+
     use super::*;
 
     #[test]
@@ -664,5 +776,44 @@ mod test {
 
         let c: Coordinate = (1 as isize, 1 as isize).into();
         assert_eq!(c, expected);
+    }
+
+    #[rstest]
+    #[case((4, 4), (2, 0), (1, 4))]
+    #[case((4, 4), (0, 2), (4, 1))]
+    #[case((4, 4), (1, 0), (-1, 4))]
+    #[case((4, 4), (3, 0), (3, 4))]
+    #[case((1, 4), (2, 0), (1, 4))]
+    #[case((1, 4), (0, 2), (1, 1))]
+    fn test_coordinate_fold(
+        #[case] given: (isize, isize),
+        #[case] line: (isize, isize),
+        #[case] expected: (isize, isize),
+    ) {
+        let given: Coordinate = given.into();
+        let line = line.into();
+        let expected = expected.into();
+        assert_eq!(given.folded_at(&line), expected);
+    }
+
+    #[rstest]
+    #[case(0..=5, 2, 0..=2, 3..=5)]
+    fn test_bisect(
+        #[case] given: impl Iterator<Item = isize>,
+        #[case] line: isize,
+        #[case] expected_left: impl Iterator<Item = isize>,
+        #[case] expected_right: impl Iterator<Item = isize>,
+    ) {
+        let given: Space<Coordinate, bool> =
+            given.map(|x| (x, 0).into()).map(|c| (c, true)).collect();
+        let line = (line, 0).into();
+        let (a, b) = given.bisect_at(&line);
+        let a_keys: HashSet<isize> = a.keys().map(|c| c.x).collect();
+        let b_keys: HashSet<isize> = b.keys().map(|c| c.x).collect();
+        dbg!(&a_keys, &b_keys);
+        let expected_left: HashSet<_> = expected_left.collect();
+        let expected_right: HashSet<_> = expected_right.collect();
+        assert_eq!(a_keys, expected_left);
+        assert_eq!(b_keys, expected_right);
     }
 }
