@@ -214,7 +214,7 @@ fn main() {
     let p2 = starting_positions(&cave)
         .iter()
         .map(|l| {
-            let tc = total_energized(&cave, *l);
+            let t = total_energized(&cave, *l);
             // dbg!(l, t);
             t
         })
