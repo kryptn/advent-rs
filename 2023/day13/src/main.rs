@@ -1,5 +1,3 @@
-use std::collections::{HashMap, HashSet};
-
 use advent::input_store;
 use advent_toolbox::spatial::{Coordinate, Space};
 use itertools::Itertools;
@@ -39,6 +37,7 @@ struct ScanResult {
     matching: isize,
     cells: isize,
     broken: bool,
+    tolerated: isize,
 }
 
 impl ScanResult {
@@ -55,22 +54,28 @@ impl std::fmt::Display for ScanResult {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "line: ({}, {}), matching: {}, cells: {}, broken: {}, score: {}",
+            "line: ({}, {}), matching: {}, cells: {}, broken: {}, score: {}, tolerated: {}",
             self.line.x,
             self.line.y,
             self.matching,
             self.cells,
             self.broken,
             self.score(),
+            self.tolerated,
         )
     }
 }
 
-fn scan_rows_match(grid: &Space<Coordinate, Square>, initial: isize) -> ScanResult {
+fn scan_rows_match(
+    grid: &Space<Coordinate, Square>,
+    initial: isize,
+    tolerations: isize,
+) -> ScanResult {
     let (lower_bound, upper_bound) = grid.bounding_box();
     let mut matching_rows = 0;
     let mut matching_cells = 0;
     let mut broken = false;
+    let mut tolerated = 0;
 
     'matching: while initial - matching_rows >= 0 {
         for x in lower_bound.x..=upper_bound.x {
@@ -81,8 +86,12 @@ fn scan_rows_match(grid: &Space<Coordinate, Square>, initial: isize) -> ScanResu
                     if sa == sb {
                         matching_cells += 1;
                     } else {
-                        broken = true;
-                        break 'matching;
+                        if tolerated >= tolerations {
+                            broken = true;
+                            break 'matching;
+                        } else {
+                            tolerated += 1;
+                        }
                     }
                 }
                 _ => break 'matching,
@@ -96,14 +105,20 @@ fn scan_rows_match(grid: &Space<Coordinate, Square>, initial: isize) -> ScanResu
         matching: matching_rows,
         cells: matching_cells,
         broken,
+        tolerated,
     }
 }
 
-fn scan_columns_match(grid: &Space<Coordinate, Square>, initial: isize) -> ScanResult {
+fn scan_columns_match(
+    grid: &Space<Coordinate, Square>,
+    initial: isize,
+    tolerations: isize,
+) -> ScanResult {
     let (lower_bound, upper_bound) = grid.bounding_box();
     let mut matching_columns = 0;
     let mut matching_cells = 0;
     let mut broken = false;
+    let mut tolerated = 0;
 
     'matching: while initial - matching_columns >= 0 {
         for y in lower_bound.y..=upper_bound.y {
@@ -114,8 +129,12 @@ fn scan_columns_match(grid: &Space<Coordinate, Square>, initial: isize) -> ScanR
                     if sa == sb {
                         matching_cells += 1;
                     } else {
-                        broken = true;
-                        break 'matching;
+                        if tolerated >= tolerations {
+                            broken = true;
+                            break 'matching;
+                        } else {
+                            tolerated += 1;
+                        }
                     }
                 }
                 _ => break 'matching,
@@ -129,44 +148,45 @@ fn scan_columns_match(grid: &Space<Coordinate, Square>, initial: isize) -> ScanR
         matching: matching_columns,
         cells: matching_cells,
         broken,
+        tolerated,
     }
 }
 
-fn score_for_grid(grid: &Space<Coordinate, Square>) -> isize {
+fn score_for_grid(grid: &Space<Coordinate, Square>, tolerations: isize) -> isize {
     let (lower, upper) = grid.bounding_box();
 
-    let matching_rows = (lower.y..=upper.y).map(|y| scan_rows_match(&grid, y));
-    let matching_columns = (lower.x..=upper.x).map(|x| scan_columns_match(&grid, x));
+    let matching_rows = (lower.y..=upper.y).map(|y| scan_rows_match(&grid, y, tolerations));
+    let matching_columns = (lower.x..=upper.x).map(|x| scan_columns_match(&grid, x, tolerations));
 
     let scores = matching_rows
         .chain(matching_columns)
         .sorted_by(|a, b| b.cells.cmp(&a.cells))
         .collect::<Vec<_>>();
 
-    println!("grid: \n{}", grid);
+    // println!("grid: \n{}", grid);
 
     for sr in &scores {
-        println!("{}", sr);
+        // println!("{}", sr);
     }
 
     let valid: Vec<_> = scores
         .iter()
-        .filter(|sr| !sr.broken && sr.matching > 0)
+        .filter(|sr| !sr.broken && sr.matching > 0 && sr.tolerated == tolerations)
         .collect();
 
-    println!("valid: \n");
+    // println!("valid: \n");
     for sr in &valid {
-        println!("{}", sr);
+        // println!("{}", sr);
     }
 
     match valid.first() {
         Some(top) => {
-            println!("\ntop: {}\n\n", top);
+            // println!("\ntop: {}\n\n", top);
 
             top.score()
         }
         None => {
-            println!("\nno top\n\n");
+            // println!("\nno top\n\n");
 
             0
         }
@@ -175,79 +195,6 @@ fn score_for_grid(grid: &Space<Coordinate, Square>) -> isize {
 
 fn main() {
     let input = input_store::get_input(YEAR, DAY);
-    // let input = r#"#.##..##.
-    // ..#.##.#.
-    // ##......#
-    // ##......#
-    // ..#.##.#.
-    // ..##..##.
-    // #.#.##.#.
-
-    // #...##..#
-    // #....#..#
-    // ..##..###
-    // #####.##.
-    // #####.##.
-    // ..##..###
-    // #....#..#
-
-    // .#.##.#.#
-    // .##..##..
-    // .#.##.#..
-    // #......##
-    // #......##
-    // .#.##.#..
-    // .##..##.#
-
-    // #..#....#
-    // ###..##..
-    // .##.#####
-    // .##.#####
-    // ###..##..
-    // #..#....#
-    // #..##...#
-
-    // #.##..##.
-    // ..#.##.#.
-    // ##..#...#
-    // ##...#..#
-    // ..#.##.#.
-    // ..##..##.
-    // #.#.##.#.
-
-    // ###.##.##
-    // ##.####.#
-    // ##.#..#.#
-    // ####..###
-    // ....##...
-    // ##.#..#.#
-    // ...#..#..
-    // ##..###.#
-    // ##......#
-    // ##......#
-    // ..#.##.#.
-    // ...#..#..
-    // ##.####.#
-    // ....##...
-    // ...####..
-    // ....##...
-    // ##.####.#
-
-    // .##.##...##...##.
-    // #####..##..##..##
-    // .....##..##..##..
-    // .##.#.#.####.#.#.
-    // .##...#.#..#.#...
-    // ....#..........#.
-    // #..#..#......#..#
-    // ....###.....####.
-    // .##...#.#..#.#...
-    // .....#..####..#..
-    // #..#...##..##...#
-    // ....#...#..#...#.
-    // #..#.##########.#
-    // #..##...####...##
-    // #####.##.##.##.##"#;
 
     let grids: Vec<Space<Coordinate, Square>> = input
         .trim()
@@ -255,10 +202,12 @@ fn main() {
         .map(|rg| Space::from(rg))
         .collect();
 
-    let part_1 = grids.iter().map(|g| score_for_grid(g)).sum::<isize>();
+    let part_1 = grids.iter().map(|g| score_for_grid(g, 0)).sum::<isize>();
 
     println!("part_1 => {}", part_1);
-    println!("part_2 => {}", "not done");
+
+    let part_2 = grids.iter().map(|g| score_for_grid(g, 1)).sum::<isize>();
+    println!("part_2 => {}", part_2);
 }
 
 #[cfg(test)]
@@ -276,54 +225,6 @@ mod test {
     fn p1_tests(#[case] given: &str, #[case] expected: &str) {
         assert_eq!(given, expected);
     }
-
-    const REFLECTION_1: &str = r#"#.##..##.
-    ..#.##.#.
-    ##......#
-    ##......#
-    ..#.##.#.
-    ..##..##.
-    #.#.##.#."#;
-
-    const REFLECTION_2: &str = r#"#...##..#
-    #....#..#
-    ..##..###
-    #####.##.
-    #####.##.
-    ..##..###
-    #....#..#"#;
-
-    // #[rstest]
-    // #[case(REFLECTION_1, (4, 0), 5)]
-    // #[case(REFLECTION_2, (0, 3), 400)]
-    // fn test_reflection(
-    //     #[case] reflection_test_input: &str,
-    //     #[case] expected: impl Into<Coordinate>,
-    //     #[case] expected_score: isize,
-    // ) {
-    //     let grid = Space::from(reflection_test_input);
-    //     println!("{}", grid);
-    //     let reflection = find_reflection(&grid).unwrap();
-    //     assert_eq!(reflection, expected.into());
-    //     let score = reflection_score(&grid, reflection);
-    //     assert_eq!(score, expected_score);
-    // }
-
-    // #[rstest]
-    // #[case(REFLECTION_1, (4, 0), 5)]
-    // #[case(REFLECTION_2, (0, 3), 400)]
-    // fn test_reflection_new(
-    //     #[case] reflection_test_input: &str,
-    //     #[case] expected: impl Into<Coordinate>,
-    //     #[case] expected_score: isize,
-    // ) {
-    //     let grid = Space::from(reflection_test_input);
-    //     println!("{}", grid);
-    //     let reflection = find_reflection_new(&grid);
-    //     assert_eq!(reflection, expected.into());
-    //     let score = reflection_score(&grid, reflection);
-    //     assert_eq!(score, expected_score);
-    // }
 
     #[rstest]
     #[case("ADVENT", "ADVENT")]
