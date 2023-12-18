@@ -11,6 +11,35 @@ struct Instruction {
     color: String,
 }
 
+impl std::fmt::Display for Instruction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let value = format!("{:?} {} {}", self.direction, self.distance, self.color);
+        write!(f, "{}", value)
+    }
+}
+
+impl Instruction {
+    fn true_instruction(&self) -> Self {
+        let distance = {
+            let rd = &self.color[1..6];
+            u64::from_str_radix(rd, 16).unwrap() as usize
+        };
+        let direction = match self.color.chars().last().unwrap() {
+            '0' => Direction::Up,
+            '1' => Direction::Down,
+            '2' => Direction::Left,
+            '3' => Direction::Right,
+            _ => panic!("bad direction"),
+        };
+
+        Self {
+            direction,
+            distance,
+            color: self.color.clone(),
+        }
+    }
+}
+
 impl From<String> for Instruction {
     fn from(value: String) -> Self {
         let value = value.trim().replace("(", "").replace(")", "");
@@ -89,53 +118,33 @@ impl Digger {
     }
 }
 
-fn count_dug_up(lagoon: &Space<Coordinate, Voxel>) -> usize {
-    let (lower, upper) = lagoon.bounding_box();
+fn dig_lagoon(lagoon: &mut Space<Coordinate, Voxel>, instructions: &Vec<Instruction>) {
+    let mut digger = Digger {
+        position: Coordinate::new(0, 0),
+    };
 
-    let mut total = 0;
-
-    for y in lower.y..=upper.y {
-        let mut should_count = false;
-        let mut last_was_edge = false;
-        for x in lower.x..=upper.x {
-            let coord = Coordinate::new(x, y);
-            if let Some(voxel) = lagoon.get(&coord) {
-                if voxel.color.is_some() {
-                    total += 1;
-                }
-
-                last_was_edge = true;
-            } else if last_was_edge {
-                should_count = !should_count;
-
-                last_was_edge = false;
-            }
-        }
+    for inst in instructions {
+        let voxels = digger.apply_instruction(&inst);
+        lagoon.extend(voxels);
     }
-
-    lagoon
-        .iter()
-        .filter(|(_, v)| v.color.is_some())
-        .collect::<Vec<_>>()
-        .len()
 }
 
 fn main() {
     let input = input_store::get_input(YEAR, DAY);
-    // let input = r#"R 6 (#70c710)
-    // D 5 (#0dc571)
-    // L 2 (#5713f0)
-    // D 2 (#d2c081)
-    // R 2 (#59c680)
-    // D 2 (#411b91)
-    // L 5 (#8ceee2)
-    // U 2 (#caa173)
-    // L 1 (#1b58a2)
-    // U 2 (#caa171)
-    // R 2 (#7807d2)
-    // U 3 (#a77fa3)
-    // L 2 (#015232)
-    // U 2 (#7a21e3)"#;
+    let input = r#"R 6 (#70c710)
+    D 5 (#0dc571)
+    L 2 (#5713f0)
+    D 2 (#d2c081)
+    R 2 (#59c680)
+    D 2 (#411b91)
+    L 5 (#8ceee2)
+    U 2 (#caa173)
+    L 1 (#1b58a2)
+    U 2 (#caa171)
+    R 2 (#7807d2)
+    U 3 (#a77fa3)
+    L 2 (#015232)
+    U 2 (#7a21e3)"#;
 
     let instructions: Vec<_> = input
         .trim()
@@ -152,36 +161,33 @@ fn main() {
             dug: false,
         },
     );
-    let mut digger = Digger {
-        position: Coordinate::new(0, 0),
-    };
 
-    for inst in instructions {
-        let voxels = digger.apply_instruction(&inst);
-        lagoon.extend(voxels);
-    }
+    dig_lagoon(&mut lagoon, &instructions);
 
-    // let point = spatial::ORIGIN + Direction::Up + Direction::Right;
-    let point = spatial::ORIGIN + Direction::Down + Direction::Right;
+    let point = spatial::ORIGIN + Direction::Up + Direction::Right;
+    // let point = spatial::ORIGIN + Direction::Down + Direction::Right;
     let filled = lagoon.flood_fill(&point);
-
     let part_1 = lagoon.len() + filled.len();
-    let part_1_v2 = lagoon.len();
-
-    let filled: Vec<_> = filled
-        .into_iter()
-        .map(|(c, v)| {
-            let mut v = v;
-            v.dug = true;
-            (c, v)
-        })
-        .collect();
-    lagoon.extend(filled);
-
     println!("lagoon:\n{}", lagoon);
 
-    println!("part_1 => {} also {}", part_1, part_1_v2);
-    println!("part_2 => {}", "not done");
+    println!("part_1 => {}", part_1);
+
+    let mut lagoon: Space<Coordinate, Voxel> = Space::new();
+    let instructions = instructions
+        .iter()
+        .map(|i| i.true_instruction())
+        .collect::<Vec<_>>();
+
+    for inst in &instructions {
+        println!("{}", inst);
+    }
+
+    dig_lagoon(&mut lagoon, &instructions);
+    println!("lagoon is dug, {} edges", lagoon.len());
+    let filled = lagoon.flood_fill(&point);
+    let part_2 = lagoon.len() + filled.len();
+
+    println!("part_2 => {}", part_2);
 }
 
 #[cfg(test)]
