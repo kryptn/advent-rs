@@ -50,6 +50,14 @@ impl Range {
             None
         }
     }
+
+    pub fn combine(&self, other: &Self) -> Vec<Self> {
+        if self.intersects(other) {
+            vec![Range(self.0.min(other.0), self.1.max(other.1))]
+        } else {
+            vec![*self, *other]
+        }
+    }
 }
 
 impl From<(isize, isize)> for Range {

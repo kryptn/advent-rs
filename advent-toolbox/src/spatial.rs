@@ -45,6 +45,10 @@ where
 
 pub trait Traversable {
     fn is_traversable(&self) -> bool;
+
+    fn cost(&self) -> usize {
+        1
+    }
 }
 
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
@@ -57,6 +61,8 @@ pub const UP: Coordinate = Coordinate { x: 0, y: 1 };
 pub const DOWN: Coordinate = Coordinate { x: 0, y: -1 };
 pub const LEFT: Coordinate = Coordinate { x: -1, y: 0 };
 pub const RIGHT: Coordinate = Coordinate { x: 1, y: 0 };
+
+pub const ORIGIN: Coordinate = Coordinate { x: 0, y: 0 };
 
 impl Coordinate {
     pub fn new(x: isize, y: isize) -> Self {
@@ -413,7 +419,38 @@ impl<V> Space<Coordinate, V> {
         out.into_iter().collect()
     }
 
-    pub fn a_star(&self, start: &Coordinate, goal: &Coordinate) -> Option<Vec<Coordinate>>
+    pub fn flood_fill(&self, start: &Coordinate) -> Vec<(Coordinate, V)>
+    where
+        V: Traversable + Default,
+    {
+        let mut out = vec![*start];
+        let mut queue = vec![*start];
+
+        while let Some(current) = queue.pop() {
+            for next in current.cardinals().iter() {
+                // println!("at {}, next {}", current, next);
+                if let Some(value) = self.get(next) {
+                    if !value.is_traversable() {
+                        continue;
+                    }
+                }
+
+                if !out.contains(next) {
+                    out.push(*next);
+                    queue.push(*next);
+                }
+            }
+        }
+
+        out.into_iter().map(|c| (c, V::default())).collect()
+    }
+
+    pub fn a_star(
+        &self,
+        start: &Coordinate,
+        goal: &Coordinate,
+        validate: impl Fn(&Vec<Coordinate>) -> bool,
+    ) -> Option<Vec<Coordinate>>
     where
         V: Traversable,
     {
@@ -431,16 +468,35 @@ impl<V> Space<Coordinate, V> {
                 break;
             }
 
+            let mut last_four = vec![current];
+            while last_four.len() < 4 {
+                let last = last_four.last().unwrap();
+                if last == start {
+                    break;
+                }
+                match came_from.get(&last) {
+                    Some(&c) => last_four.push(c),
+                    None => break,
+                }
+            }
+            last_four.reverse();
+
             for next in current.cardinals().iter() {
                 if let Some(value) = self.get(next) {
                     if !value.is_traversable() {
+                        continue;
+                    }
+
+                    let mut last_five = last_four.clone();
+                    last_five.push(*next);
+                    if !validate(&last_five) {
                         continue;
                     }
                 } else {
                     continue;
                 }
 
-                let new_cost = cost_so_far[&current] + 1;
+                let new_cost = cost_so_far[&current] + self.get(next).unwrap().cost();
                 if !cost_so_far.contains_key(next) || new_cost < cost_so_far[next] {
                     cost_so_far.insert(*next, new_cost);
                     let priority = new_cost + next.distance(goal);
@@ -458,8 +514,14 @@ impl<V> Space<Coordinate, V> {
         }
         path.reverse();
 
+        println!("cost_so_far: {:?}", cost_so_far[goal]);
+
         Some(path)
     }
+
+    // pub fn dfs(&self, start: &Coordinate, goal: &Coordinate, validate: impl Fn(&Vec<Coordinate>)) -> Vec<Coordinate> {
+
+    // }
 
     pub fn rows(&self) -> impl Iterator<Item = impl Iterator<Item = (Coordinate, &V)>> {
         let (lower, upper) = self.bounding_box();
@@ -594,6 +656,15 @@ impl Add<Direction> for Coordinate {
     }
 }
 
+impl Mul<isize> for Direction {
+    type Output = Coordinate;
+
+    fn mul(self, rhs: isize) -> Self::Output {
+        let coord: Coordinate = self.into();
+        (coord.x * rhs, coord.y * rhs).into()
+    }
+}
+
 impl From<char> for Direction {
     fn from(value: char) -> Self {
         match value {
@@ -601,6 +672,18 @@ impl From<char> for Direction {
             '>' | 'R' | 'r' => Self::Right,
             'v' | 'D' | 'd' => Self::Down,
             '<' | 'L' | 'l' => Self::Left,
+            _ => Self::None,
+        }
+    }
+}
+
+impl From<String> for Direction {
+    fn from(value: String) -> Self {
+        match value.as_str() {
+            "^" | "U" | "u" => Self::Up,
+            ">" | "R" | "r" => Self::Right,
+            "v" | "D" | "d" => Self::Down,
+            "<" | "L" | "l" => Self::Left,
             _ => Self::None,
         }
     }
@@ -746,6 +829,43 @@ where
             }
         }
         out
+    }
+}
+
+fn normalize((a, b): (Coordinate, Coordinate)) -> (Coordinate, Coordinate) {
+    let (x_left, x_right) = sorted(a.x, b.x);
+    let (y_left, y_right) = sorted(a.y, b.y);
+
+    ((x_left, y_left).into(), (x_right, y_right).into())
+}
+
+pub trait Line {
+    fn intersection(&self, other: &Self) -> Option<Coordinate>;
+}
+
+impl Line for (Coordinate, Coordinate) {
+    fn intersection(&self, other: &Self) -> Option<Coordinate> {
+        let (a1, b1) = normalize(*self);
+        let (a2, b2) = normalize(*other);
+
+        if a1.y == b1.y && a2.y == b2.y || a1.x == b1.x && a2.x == b2.x {
+            // lines are parallel
+            return None;
+        }
+
+        let (horiz, vert) = if a1.y == b1.y {
+            ((a1, b1), (a2, b2))
+        } else {
+            ((a2, b2), (a1, b1))
+        };
+
+        if horiz.0.y >= vert.0.y && horiz.0.y <= vert.1.y {
+            if vert.0.x >= horiz.0.x && vert.0.x <= horiz.1.x {
+                return Some((vert.0.x, horiz.0.y).into());
+            }
+        }
+
+        None
     }
 }
 

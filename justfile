@@ -17,9 +17,14 @@ generate-day year day code=code_default wait=wait_default:
         code -a $OUT
     fi
 
+    cd $OUT
+
     if [ "{{wait}}" = "true" ]; then
         advent get {{year}} {{day}} --wait
     fi
+
+    advent show {{year}} {{day}}
+
 
 prebuild-day year day wait=wait_default:
     #!/usr/bin/env sh
