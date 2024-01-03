@@ -1,3 +1,4 @@
+pub mod algo;
 pub mod automata;
 pub mod hashers;
 pub mod parser_helpers;

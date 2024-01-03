@@ -2,12 +2,18 @@ use std::{
     collections::{HashMap, HashSet, VecDeque},
     error::Error,
     hash::Hash,
-    ops::{Add, Mul, Sub},
+    ops::{Add, AddAssign, Mul, MulAssign, Rem, Sub, SubAssign},
 };
 
-use itertools::{Itertools, TakeWhileInclusive};
+use itertools::Itertools;
 
-pub trait Point {}
+use crate::parser_helpers::just_numbers;
+
+pub trait Point {
+    fn range(&self, other: &Self) -> impl Iterator<Item = Self>
+    where
+        Self: Sized;
+}
 
 #[derive(Debug)]
 pub struct Space<P, T>(HashMap<P, T>)
@@ -67,7 +73,7 @@ pub const ORIGIN: Coordinate = Coordinate { x: 0, y: 0 };
 impl Coordinate {
     pub fn new(x: isize, y: isize) -> Self {
         Self { x, y }
-    }
+    }g
 
     pub fn up(&self) -> Self {
         (self.x, self.y + 1).into()
@@ -170,6 +176,13 @@ impl Add<Coordinate> for Coordinate {
     }
 }
 
+impl AddAssign<Coordinate> for Coordinate {
+    fn add_assign(&mut self, rhs: Coordinate) {
+        self.x += rhs.x;
+        self.y += rhs.y;
+    }
+}
+
 impl Sub<Coordinate> for Coordinate {
     type Output = Self;
 
@@ -178,11 +191,33 @@ impl Sub<Coordinate> for Coordinate {
     }
 }
 
+impl SubAssign<Coordinate> for Coordinate {
+    fn sub_assign(&mut self, rhs: Coordinate) {
+        self.x -= rhs.x;
+        self.y -= rhs.y;
+    }
+}
+
 impl Mul<isize> for Coordinate {
     type Output = Coordinate;
 
     fn mul(self, rhs: isize) -> Self::Output {
         (self.x * rhs, self.y * rhs).into()
+    }
+}
+
+impl MulAssign<isize> for Coordinate {
+    fn mul_assign(&mut self, rhs: isize) {
+        self.x *= rhs;
+        self.y *= rhs;
+    }
+}
+
+impl Rem<Coordinate> for Coordinate {
+    type Output = Coordinate;
+
+    fn rem(self, rhs: Coordinate) -> Self::Output {
+        (self.x.rem_euclid(rhs.x), self.y.rem_euclid(rhs.y)).into()
     }
 }
 
@@ -205,11 +240,30 @@ coord_from!(i32);
 coord_from!(u64);
 coord_from!(i64);
 
-impl Point for Coordinate {}
+impl std::str::FromStr for Coordinate {
+    type Err = Box<dyn Error>;
 
-impl Point for (isize, isize) {}
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let parts: Vec<isize> = just_numbers(s);
+        let x = parts[0];
+        let y = parts[1];
+        Ok((x, y).into())
+    }
+}
 
-#[derive(Clone, Copy, Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
+impl Point for Coordinate {
+    fn range(&self, other: &Self) -> impl Iterator<Item = Self>
+    where
+        Self: Sized,
+    {
+        let (y_left, y_right) = sorted(self.y, other.y);
+        let (x_left, x_right) = sorted(self.x, other.x);
+
+        (y_left..=y_right).flat_map(move |y| (x_left..=x_right).map(move |x| (x, y).into()))
+    }
+}
+
+#[derive(Clone, Copy, Debug, Hash, Eq, PartialEq, Ord, PartialOrd, Default)]
 pub struct Coordinate3d {
     pub x: isize,
     pub y: isize,
@@ -266,6 +320,20 @@ impl Coordinate3d {
             (*self, self.backward()),
         ]
     }
+
+    pub fn normalize(&self, other: &Self) -> (Self, Self) {
+        sorted(*self, *other)
+    }
+
+    pub fn range(&self, other: &Self) -> impl Iterator<Item = Self> {
+        let (z_left, z_right) = sorted(self.z, other.z);
+        let (y_left, y_right) = sorted(self.y, other.y);
+        let (x_left, x_right) = sorted(self.x, other.x);
+
+        (z_left..=z_right).flat_map(move |z| {
+            (y_left..=y_right).flat_map(move |y| (x_left..=x_right).map(move |x| (x, y, z).into()))
+        })
+    }
 }
 
 impl std::fmt::Display for Coordinate3d {
@@ -290,6 +358,30 @@ impl Sub<Coordinate3d> for Coordinate3d {
     }
 }
 
+impl AddAssign<Coordinate3d> for Coordinate3d {
+    fn add_assign(&mut self, rhs: Coordinate3d) {
+        self.x += rhs.x;
+        self.y += rhs.y;
+        self.z += rhs.z;
+    }
+}
+
+impl SubAssign<Coordinate3d> for Coordinate3d {
+    fn sub_assign(&mut self, rhs: Coordinate3d) {
+        self.x -= rhs.x;
+        self.y -= rhs.y;
+        self.z -= rhs.z;
+    }
+}
+
+impl MulAssign<isize> for Coordinate3d {
+    fn mul_assign(&mut self, rhs: isize) {
+        self.x *= rhs;
+        self.y *= rhs;
+        self.z *= rhs;
+    }
+}
+
 macro_rules! coord3d_from {
     ( $x:ty ) => {
         impl From<($x, $x, $x)> for Coordinate3d {
@@ -310,9 +402,32 @@ coord3d_from!(i32);
 coord3d_from!(u64);
 coord3d_from!(i64);
 
-impl Point for Coordinate3d {}
+impl std::str::FromStr for Coordinate3d {
+    type Err = Box<dyn Error>;
 
-impl Point for (isize, isize, isize) {}
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let parts: Vec<isize> = just_numbers(s);
+        let x = parts[0];
+        let y = parts[1];
+        let z = parts[2];
+        Ok((x, y, z).into())
+    }
+}
+
+impl Point for Coordinate3d {
+    fn range(&self, other: &Self) -> impl Iterator<Item = Self>
+    where
+        Self: Sized,
+    {
+        let (z_left, z_right) = sorted(self.z, other.z);
+        let (y_left, y_right) = sorted(self.y, other.y);
+        let (x_left, x_right) = sorted(self.x, other.x);
+
+        (z_left..=z_right).flat_map(move |z| {
+            (y_left..=y_right).flat_map(move |y| (x_left..=x_right).map(move |x| (x, y, z).into()))
+        })
+    }
+}
 
 impl<K: Point, V> FromIterator<(K, V)> for Space<K, V>
 where
@@ -385,6 +500,10 @@ impl<V> Space<Coordinate, V> {
         let y: Vec<isize> = y_set.into_iter().sorted().collect();
 
         ((x[0], y[0]).into(), (x[x.len() - 1], y[y.len() - 1]).into())
+    }
+
+    pub fn bounds(&self) -> (Coordinate, Coordinate) {
+        self.bounding_box()
     }
 
     pub fn from_lines(input: &str) -> Self
@@ -499,7 +618,6 @@ impl<V> Space<Coordinate, V> {
                 let new_cost = cost_so_far[&current] + self.get(next).unwrap().cost();
                 if !cost_so_far.contains_key(next) || new_cost < cost_so_far[next] {
                     cost_so_far.insert(*next, new_cost);
-                    let priority = new_cost + next.distance(goal);
                     frontier.push_back(*next);
                     came_from.insert(*next, current);
                 }
@@ -519,9 +637,41 @@ impl<V> Space<Coordinate, V> {
         Some(path)
     }
 
-    // pub fn dfs(&self, start: &Coordinate, goal: &Coordinate, validate: impl Fn(&Vec<Coordinate>)) -> Vec<Coordinate> {
+    pub fn all_paths(&self, start: &Coordinate) -> Vec<Vec<Coordinate>>
+    where
+        V: Traversable,
+    {
+        let mut out = Vec::new();
+        let mut queue = VecDeque::new();
+        queue.push_back(vec![*start]);
 
-    // }
+        while let Some(current) = queue.pop_front() {
+            let last = current.last().unwrap();
+            for next in last.cardinals().iter() {
+                if let Some(value) = self.get(next) {
+                    if !value.is_traversable() {
+                        continue;
+                    }
+                } else {
+                    continue;
+                }
+
+                if current.contains(next) {
+                    continue;
+                }
+
+                let mut next_path = current.clone();
+                next_path.push(*next);
+                queue.push_back(next_path);
+            }
+
+            if current.len() > 1 {
+                out.push(current);
+            }
+        }
+
+        out
+    }
 
     pub fn rows(&self) -> impl Iterator<Item = impl Iterator<Item = (Coordinate, &V)>> {
         let (lower, upper) = self.bounding_box();
@@ -633,7 +783,7 @@ impl Add<Cardinal> for Coordinate {
     }
 }
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, PartialOrd, Ord)]
 pub enum Direction {
     Up,
     Right,
@@ -874,13 +1024,6 @@ mod test {
     use rstest::rstest;
 
     use super::*;
-
-    #[test]
-    fn create_grid() {
-        let objects = vec![((2, 4), false)];
-        let g: Space<(isize, isize), bool> = objects.into_iter().collect();
-        dbg!(g);
-    }
 
     #[test]
     fn test_coordinate_intos() {

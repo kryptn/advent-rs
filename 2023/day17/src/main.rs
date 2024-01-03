@@ -1,7 +1,8 @@
-use std::{cmp::Reverse, collections::HashMap};
-
 use advent::input_store;
-use advent_toolbox::spatial::{self, Coordinate, Space};
+use advent_toolbox::{
+    algo::dijkstra,
+    spatial::{self, Coordinate, Space},
+};
 use colored::Colorize;
 
 const YEAR: usize = 2023;
@@ -35,7 +36,6 @@ impl std::fmt::Display for Block {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Ord, PartialOrd)]
 struct Node {
-    // score: usize,
     position: Coordinate,
     direction: spatial::Direction,
     repeated: usize,
@@ -90,64 +90,43 @@ impl Node {
     }
 }
 
-fn dijkstra(
-    start: &Coordinate,
-    goal: &Coordinate,
-    cost_fn: impl Fn(&Coordinate) -> Option<usize>,
-    min_steps: usize,
-    max_steps: usize,
-) -> (usize, Vec<Coordinate>) {
-    let mut queue = std::collections::BinaryHeap::new();
+fn find_path<const MIN: usize, const MAX: usize>(city: &Space<Coordinate, Block>) -> usize {
+    let (lower, upper) = city.bounds();
 
-    let mut distances = HashMap::new();
-    let mut prev_map = HashMap::new();
+    let edges = |n: &Node| -> Vec<Node> { n.next_steps(MIN, MAX) };
+
+    let is_goal = |n: &Node| -> bool { n.position == upper };
+
+    let cost_fn = |n: &Node| -> Option<usize> {
+        match city.get(&n.position) {
+            Some(b) => Some(b.thermal_mass),
+            None => None,
+        }
+    };
 
     let initial_right = Node {
-        position: *start,
+        position: lower,
         direction: spatial::Direction::Right,
         repeated: 0,
     };
 
     let initial_up = Node {
-        position: *start + spatial::Direction::Up,
+        position: lower,
         direction: spatial::Direction::Up,
         repeated: 0,
     };
 
-    distances.insert(initial_right, 0);
-    distances.insert(initial_up, 0);
-
-    queue.push(Reverse(initial_right));
-    queue.push(Reverse(initial_up));
-
-    while !queue.is_empty() {
-        let Reverse(node) = queue.pop().unwrap();
-        for next in node.next_steps(min_steps, max_steps) {
-            if let Some(cost) = cost_fn(&next.position) {
-                let next_dist = distances.get(&node).unwrap() + cost;
-
-                if &next_dist < distances.get(&next).unwrap_or(&usize::MAX) {
-                    distances.insert(next, next_dist);
-                    prev_map.insert(next, node);
-                    queue.push(Reverse(next));
-                }
-            }
-        }
-    }
-
-    let (node, goal_distance) = distances
-        .iter()
-        .filter(|(k, _)| k.position == *goal && k.repeated >= min_steps)
-        .min_by_key(|v| v.1)
-        .unwrap();
-
-    let path = std::iter::successors(Some(*node), |n| prev_map.get(n).copied())
-        .map(|n| n.position)
+    let path: Vec<Node> = dijkstra(&[initial_right, initial_up], edges, is_goal, Some(cost_fn))
+        .into_iter()
         .collect();
 
-    let goal_cost = cost_fn(goal).unwrap();
+    let heat_loss = path
+        .iter()
+        .skip(1)
+        .map(|n| city.get(&n.position).unwrap().thermal_mass)
+        .sum::<usize>();
 
-    (*goal_distance + goal_cost, path)
+    heat_loss
 }
 
 fn main() {
@@ -175,49 +154,10 @@ fn main() {
 
     let city = Space::<Coordinate, Block>::from(input);
 
-    let (lower, upper) = city.bounding_box();
-
-    let min_steps = 0;
-    let max_steps = 3;
-
-    let (part_1, path) = dijkstra(
-        &lower,
-        &upper,
-        |c| match city.get(&c) {
-            Some(b) => Some(b.thermal_mass),
-            None => None,
-        },
-        min_steps,
-        max_steps,
-    );
-
-    // let mut blocked_city: Space<_, _> = city.clone().into_iter().collect();
-    // for c in path {
-    //     blocked_city.get_mut(&c).unwrap().visited = true;
-    // }
-    // println!("{}\n", blocked_city);
-
+    let part_1 = find_path::<0, 3>(&city);
     println!("part_1 => {}", part_1);
 
-    let min_steps = 4;
-    let max_steps = 10;
-    let (part_2, path) = dijkstra(
-        &lower,
-        &upper,
-        |c| match city.get(&c) {
-            Some(b) => Some(b.thermal_mass),
-            None => None,
-        },
-        min_steps,
-        max_steps,
-    );
-
-    // let mut blocked_city: Space<_, _> = city.clone().into_iter().collect();
-    // for c in path {
-    //     blocked_city.get_mut(&c).unwrap().visited = true;
-    // }
-    // println!("{}\n", blocked_city);
-
+    let part_2 = find_path::<4, 10>(&city);
     println!("part_2 => {}", part_2);
 }
 
