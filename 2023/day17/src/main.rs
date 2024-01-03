@@ -38,19 +38,28 @@ struct Node {
     // score: usize,
     position: Coordinate,
     direction: spatial::Direction,
-    repeated: isize,
+    repeated: usize,
 }
 
 impl std::hash::Hash for Node {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.position.hash(state);
         self.direction.hash(state);
+        self.repeated.hash(state);
     }
 }
 
 impl Node {
-    fn next_steps(&self) -> Vec<Self> {
+    fn next_steps(&self, min_steps: usize, max_steps: usize) -> Vec<Self> {
         let mut out = vec![];
+
+        if self.repeated < min_steps {
+            return vec![Self {
+                position: self.position + self.direction,
+                direction: self.direction,
+                repeated: self.repeated + 1,
+            }];
+        }
 
         let next_directions = &[
             self.direction,
@@ -65,7 +74,7 @@ impl Node {
                 1
             };
 
-            if repeated > 3 {
+            if repeated > max_steps {
                 continue;
             }
 
@@ -85,44 +94,35 @@ fn dijkstra(
     start: &Coordinate,
     goal: &Coordinate,
     cost_fn: impl Fn(&Coordinate) -> Option<usize>,
-) -> usize {
+    min_steps: usize,
+    max_steps: usize,
+) -> (usize, Vec<Coordinate>) {
     let mut queue = std::collections::BinaryHeap::new();
 
     let mut distances = HashMap::new();
     let mut prev_map = HashMap::new();
 
-    let initial_down = Node {
-        // score: 0,
+    let initial_right = Node {
         position: *start,
-        direction: spatial::Direction::Down,
+        direction: spatial::Direction::Right,
         repeated: 0,
     };
 
-    let initial_left = Node {
-        // score: 0,
-        position: *start,
-        direction: spatial::Direction::Left,
+    let initial_up = Node {
+        position: *start + spatial::Direction::Up,
+        direction: spatial::Direction::Up,
         repeated: 0,
     };
 
-    distances.insert(initial_down, 0);
-    distances.insert(initial_left, 0);
+    distances.insert(initial_right, 0);
+    distances.insert(initial_up, 0);
 
-    queue.push(Reverse(initial_down));
-    queue.push(Reverse(initial_left));
+    queue.push(Reverse(initial_right));
+    queue.push(Reverse(initial_up));
 
     while !queue.is_empty() {
         let Reverse(node) = queue.pop().unwrap();
-
-        // if node.position == *goal {
-        //     return distances.get(&node).unwrap().clone();
-        // }
-
-        for next in node.next_steps() {
-            // if distances.contains_key(&next) {
-            //     continue;
-            // }
-
+        for next in node.next_steps(min_steps, max_steps) {
             if let Some(cost) = cost_fn(&next.position) {
                 let next_dist = distances.get(&node).unwrap() + cost;
 
@@ -135,14 +135,19 @@ fn dijkstra(
         }
     }
 
-    let goal_distance = distances
+    let (node, goal_distance) = distances
         .iter()
-        .filter(|(k, _)| k.position == *goal)
-        .map(|(_, v)| v)
-        .min()
+        .filter(|(k, _)| k.position == *goal && k.repeated >= min_steps)
+        .min_by_key(|v| v.1)
         .unwrap();
 
-    *goal_distance
+    let path = std::iter::successors(Some(*node), |n| prev_map.get(n).copied())
+        .map(|n| n.position)
+        .collect();
+
+    let goal_cost = cost_fn(goal).unwrap();
+
+    (*goal_distance + goal_cost, path)
 }
 
 fn main() {
@@ -162,17 +167,58 @@ fn main() {
     // 2546548887735
     // 4322674655533"#;
 
+    // let input = r#"111111111111
+    // 999999999991
+    // 999999999991
+    // 999999999991
+    // 999999999991"#;
+
     let city = Space::<Coordinate, Block>::from(input);
 
     let (lower, upper) = city.bounding_box();
 
-    let part_1 = dijkstra(&lower, &upper, |c| match city.get(&c) {
-        Some(b) => Some(b.thermal_mass),
-        None => None,
-    });
+    let min_steps = 0;
+    let max_steps = 3;
+
+    let (part_1, path) = dijkstra(
+        &lower,
+        &upper,
+        |c| match city.get(&c) {
+            Some(b) => Some(b.thermal_mass),
+            None => None,
+        },
+        min_steps,
+        max_steps,
+    );
+
+    // let mut blocked_city: Space<_, _> = city.clone().into_iter().collect();
+    // for c in path {
+    //     blocked_city.get_mut(&c).unwrap().visited = true;
+    // }
+    // println!("{}\n", blocked_city);
 
     println!("part_1 => {}", part_1);
-    println!("part_2 => {}", "not done");
+
+    let min_steps = 4;
+    let max_steps = 10;
+    let (part_2, path) = dijkstra(
+        &lower,
+        &upper,
+        |c| match city.get(&c) {
+            Some(b) => Some(b.thermal_mass),
+            None => None,
+        },
+        min_steps,
+        max_steps,
+    );
+
+    // let mut blocked_city: Space<_, _> = city.clone().into_iter().collect();
+    // for c in path {
+    //     blocked_city.get_mut(&c).unwrap().visited = true;
+    // }
+    // println!("{}\n", blocked_city);
+
+    println!("part_2 => {}", part_2);
 }
 
 #[cfg(test)]
