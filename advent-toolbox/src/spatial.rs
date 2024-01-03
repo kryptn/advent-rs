@@ -73,7 +73,7 @@ pub const ORIGIN: Coordinate = Coordinate { x: 0, y: 0 };
 impl Coordinate {
     pub fn new(x: isize, y: isize) -> Self {
         Self { x, y }
-    }g
+    }
 
     pub fn up(&self) -> Self {
         (self.x, self.y + 1).into()
