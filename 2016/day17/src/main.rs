@@ -1,4 +1,4 @@
-use std::{collections::HashSet};
+use std::collections::HashSet;
 
 use advent::input_store;
 use advent_toolbox::spatial::{coordinates_within, Coordinate, Direction};

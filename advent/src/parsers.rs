@@ -1,12 +1,13 @@
 use std::{fmt::Debug, str::FromStr};
 
 use nom::{
+    branch::alt,
     bytes::complete::tag,
     character::complete::{char, digit1, multispace0, one_of},
     combinator::{opt, value},
     error::ParseError,
     sequence::delimited,
-    IResult, branch::alt,
+    IResult,
 };
 
 /// A combinator that takes a parser `inner` and produces a parser that also consumes both leading and
@@ -60,7 +61,18 @@ pub fn parse_coordinate(input: &str) -> IResult<&str, crate::grid::Coordinate> {
 }
 
 pub fn parse_number_word(input: &str) -> IResult<&str, char> {
-    let (input, num) = alt((tag("zero"), tag("one"), tag("two"), tag("three"), tag("four"), tag("five"), tag("six"), tag("seven"), tag("eight"), tag("nine")))(input)?;
+    let (input, num) = alt((
+        tag("zero"),
+        tag("one"),
+        tag("two"),
+        tag("three"),
+        tag("four"),
+        tag("five"),
+        tag("six"),
+        tag("seven"),
+        tag("eight"),
+        tag("nine"),
+    ))(input)?;
     let num = match num {
         "zero" => '0',
         "one" => '1',
@@ -79,7 +91,18 @@ pub fn parse_number_word(input: &str) -> IResult<&str, char> {
 }
 
 pub fn parse_number_word_reversed(input: &str) -> IResult<&str, char> {
-    let (input, num) = alt((tag("orez"), tag("eno"), tag("owt"), tag("eerht"), tag("ruof"), tag("evif"), tag("xis"), tag("neves"), tag("thgie"), tag("enin")))(input)?;
+    let (input, num) = alt((
+        tag("orez"),
+        tag("eno"),
+        tag("owt"),
+        tag("eerht"),
+        tag("ruof"),
+        tag("evif"),
+        tag("xis"),
+        tag("neves"),
+        tag("thgie"),
+        tag("enin"),
+    ))(input)?;
     let num = match num {
         "orez" => '0',
         "eno" => '1',

@@ -4,6 +4,10 @@ use std::{
     hash::Hash,
 };
 
+pub trait IntoEdges<T> {
+    fn into_edges(self) -> Vec<T>;
+}
+
 pub fn dijkstra<T>(
     initial: &[T],
     // goal: &T,

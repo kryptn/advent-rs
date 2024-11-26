@@ -792,6 +792,13 @@ pub enum Direction {
     None,
 }
 
+pub const DIRECTIONS: [Direction; 4] = [
+    Direction::Up,
+    Direction::Right,
+    Direction::Down,
+    Direction::Left,
+];
+
 impl Add<Direction> for Coordinate {
     type Output = Self;
 

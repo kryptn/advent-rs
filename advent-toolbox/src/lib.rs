@@ -1,5 +1,6 @@
 pub mod algo;
 pub mod automata;
+pub mod graph;
 pub mod hashers;
 pub mod parser_helpers;
 pub mod range;

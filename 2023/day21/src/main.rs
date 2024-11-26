@@ -1,3 +1,5 @@
+use std::{thread::sleep, time::Duration};
+
 use advent::input_store;
 use advent_toolbox::{
     automata::Automata,
@@ -88,10 +90,15 @@ fn main() {
 
     let mut garden: Space<Coordinate, Square> = Space::from(input);
 
-    // println!("{}\n\n", garden);
-    for _ in 0..64 {
+    println!("{}\n\n", garden);
+    for _ in 0..i32::MAX {
         apply(&mut garden);
-        // println!("{}\n\n", garden);
+        println!(
+            "{}\nactive: {}\n",
+            garden,
+            garden.values().filter(|s| **s == Square::Active).count()
+        );
+        sleep(Duration::from_millis(100));
     }
 
     let part_1 = garden.values().filter(|s| **s == Square::Active).count();

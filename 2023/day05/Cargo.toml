@@ -12,3 +12,4 @@ anyhow = "1.0.75"
 itertools = "0.12.0"
 nom = "7.1.3"
 rayon = "1.8.0"
+advent-toolbox = { version = "0.1.0", path = "../../advent-toolbox" }

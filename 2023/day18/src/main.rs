@@ -1,5 +1,5 @@
 use advent::input_store;
-use advent_toolbox::spatial::{self, Coordinate, Direction, Space, Traversable};
+use advent_toolbox::spatial::{self, Coordinate, Direction, Line, Space, Traversable};
 use colored::Colorize;
 
 const YEAR: usize = 2023;
@@ -57,78 +57,6 @@ impl From<String> for Instruction {
     }
 }
 
-#[derive(Clone, Debug, Default)]
-struct Voxel {
-    color: Option<String>,
-    origin: bool,
-    dug: bool,
-}
-
-impl Traversable for Voxel {
-    fn is_traversable(&self) -> bool {
-        self.color.is_none()
-    }
-}
-
-impl std::fmt::Display for Voxel {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match (&self.color, self.dug) {
-            (None, true) => write!(f, "."),
-            (Some(_), true) => {
-                let value = if self.origin {
-                    "#".to_string().red()
-                } else {
-                    "#".to_string().white()
-                };
-
-                write!(f, "{}", value)
-            }
-            _ => write!(f, " "),
-        }
-    }
-}
-
-struct Digger {
-    position: Coordinate,
-}
-
-impl Digger {
-    fn apply_instruction(&mut self, inst: &Instruction) -> Vec<(Coordinate, Voxel)> {
-        let mut out = Vec::new();
-
-        let direction = match inst.direction {
-            Direction::Up => Direction::Down,
-            Direction::Down => Direction::Up,
-            _ => inst.direction,
-        };
-
-        for _ in 0..inst.distance {
-            self.position = self.position + direction;
-            out.push((
-                self.position,
-                Voxel {
-                    color: Some(inst.color.clone()),
-                    origin: self.position == spatial::ORIGIN,
-                    dug: true,
-                },
-            ));
-        }
-
-        out
-    }
-}
-
-fn dig_lagoon(lagoon: &mut Space<Coordinate, Voxel>, instructions: &Vec<Instruction>) {
-    let mut digger = Digger {
-        position: Coordinate::new(0, 0),
-    };
-
-    for inst in instructions {
-        let voxels = digger.apply_instruction(&inst);
-        lagoon.extend(voxels);
-    }
-}
-
 fn main() {
     let input = input_store::get_input(YEAR, DAY);
     let input = r#"R 6 (#70c710)
@@ -152,42 +80,27 @@ fn main() {
         .map(|l| Instruction::from(l.to_string()))
         .collect();
 
-    let mut lagoon: Space<Coordinate, Voxel> = Space::new();
-    lagoon.insert(
-        Coordinate::new(0, 0),
-        Voxel {
-            color: Some("origin".to_string()),
-            origin: true,
-            dug: false,
-        },
-    );
-
-    dig_lagoon(&mut lagoon, &instructions);
-
-    let point = spatial::ORIGIN + Direction::Up + Direction::Right;
-    // let point = spatial::ORIGIN + Direction::Down + Direction::Right;
-    let filled = lagoon.flood_fill(&point);
-    let part_1 = lagoon.len() + filled.len();
-    println!("lagoon:\n{}", lagoon);
-
-    println!("part_1 => {}", part_1);
-
-    let mut lagoon: Space<Coordinate, Voxel> = Space::new();
-    let instructions = instructions
+    let mut pos = Coordinate::new(0, 0);
+    let edges: Vec<_> = instructions
         .iter()
-        .map(|i| i.true_instruction())
-        .collect::<Vec<_>>();
+        .map(|i| {
+            let end = pos + i.direction * i.distance as isize;
+            let out = (pos.clone(), end);
+            pos = end;
+            out
+        })
+        .collect();
 
-    for inst in &instructions {
-        println!("{}", inst);
+    for (start, end) in &edges {
+        println!("{:?} -> {:?}", start, end);
     }
 
-    dig_lagoon(&mut lagoon, &instructions);
-    println!("lagoon is dug, {} edges", lagoon.len());
-    let filled = lagoon.flood_fill(&point);
-    let part_2 = lagoon.len() + filled.len();
+    let line_1 = (Coordinate::new(-5, 5), Coordinate::new(5, 5));
+    let line_2 = (Coordinate::new(0, -5), Coordinate::new(0, 5));
 
-    println!("part_2 => {}", part_2);
+    let intersection_point = line_1.intersection(&line_2);
+
+    println!("intersection point: {:?}", intersection_point);
 }
 
 #[cfg(test)]
