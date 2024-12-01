@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use advent::input_store;
 
 const YEAR: usize = 2024;
@@ -8,8 +10,17 @@ fn main() {
     // split them and cast them to ints
     let input = input_store::get_input(YEAR, DAY);
 
+    //     let input = r#"3   4
+    // 4   3
+    // 2   5
+    // 1   3
+    // 3   9
+    // 3   3
+    // "#;
+
     let mut left = vec![];
     let mut right = vec![];
+    let mut counts: HashMap<i32, i32> = HashMap::new();
 
     input.lines().for_each(|line| {
         let parts: Vec<&str> = line.split_whitespace().collect();
@@ -17,18 +28,27 @@ fn main() {
         let b: i32 = parts[1].parse().unwrap();
         left.push(a);
         right.push(b);
+        counts.entry(b).and_modify(|e| *e += 1).or_insert(1);
     });
 
     left.sort();
     right.sort();
 
-
-    let deltas = left.iter().zip(right.iter()).map(|(a, b)| (b - a).abs()).collect::<Vec<i32>>();
+    let deltas = left
+        .iter()
+        .zip(right.iter())
+        .map(|(a, b)| (b - a).abs())
+        .collect::<Vec<i32>>();
 
     let part_1 = deltas.iter().sum::<i32>();
 
     println!("part_1 => {}", part_1);
-    println!("part_2 => {}", "not done");
+
+    let part_2 = left
+        .iter()
+        .map(|l| l * counts.get(l).unwrap_or(&0))
+        .sum::<i32>();
+    println!("part_2 => {}", part_2);
 }
 
 #[cfg(test)]
