@@ -1,5 +1,5 @@
 
-code_default := "false"
+code_default := "true"
 wait_default := "true"
 generate-day year day code=code_default wait=wait_default:
     #!/usr/bin/env sh
@@ -51,3 +51,9 @@ run year day:
     #!/usr/bin/env sh
     DAY=$(printf "day%02d" {{day}})
     cargo run --manifest-path {{year}}/$DAY/Cargo.toml
+
+benchmark year day:
+    #!/usr/bin/env sh
+    DAY=$(printf "day%02d" {{day}})
+    cargo build --release --manifest-path {{year}}/$DAY/Cargo.toml
+    hyperfine --warmup 3 -N "{{year}}/$DAY/target/release/$DAY"
