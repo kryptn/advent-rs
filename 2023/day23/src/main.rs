@@ -164,12 +164,12 @@ fn build_graph(map: &Space<Coordinate, Square>) -> DiGraph<Coordinate, usize> {
     graph
 }
 
-fn consolidate_graph(graph: &mut DiGraph<Coordinate, usize>) {
+// fn consolidate_graph(graph: &mut DiGraph<Coordinate, usize>) {
 
 
-    for node in graph.n
+//     for node in graph.n
 
-}
+// }
 
 fn main() {
     let input = input_store::get_input(YEAR, DAY);
