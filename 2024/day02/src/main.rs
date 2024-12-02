@@ -16,7 +16,23 @@ fn is_gradual(numbers: &Vec<isize>) -> bool {
         return false;
     }
 
-    return true;
+    true
+}
+
+fn is_gradual_enough(numbers: &Vec<isize>) -> bool {
+    if is_gradual(numbers) {
+        return true;
+    }
+
+    for i in 0..numbers.len() {
+        let mut new_numbers = numbers.clone();
+        new_numbers.remove(i);
+        if is_gradual(&new_numbers) {
+            return true;
+        }
+    }
+
+    false
 }
 
 fn main() {
@@ -39,9 +55,10 @@ fn main() {
         .collect();
 
     let part_1 = reports.iter().filter(|r| is_gradual(r)).count();
-
     println!("part_1 => {}", part_1);
-    println!("part_2 => {}", "not done");
+
+    let part_2 = reports.iter().filter(|r| is_gradual_enough(r)).count();
+    println!("part_2 => {}", part_2);
 }
 
 #[cfg(test)]
