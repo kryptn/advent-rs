@@ -1,4 +1,5 @@
 use advent::input_store;
+use advent_toolbox::parser_helpers::lines_of_just_numbers;
 use itertools::Itertools;
 
 const YEAR: usize = 2024;
@@ -45,14 +46,7 @@ fn main() {
     // 8 6 4 4 1
     // 1 3 6 7 9"#;
 
-    let reports: Vec<Vec<isize>> = input
-        .lines()
-        .map(|line| {
-            line.split_whitespace()
-                .map(|n| n.parse::<isize>().unwrap())
-                .collect()
-        })
-        .collect();
+    let reports = lines_of_just_numbers(&input);
 
     let part_1 = reports.iter().filter(|r| is_gradual(r)).count();
     println!("part_1 => {}", part_1);
