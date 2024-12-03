@@ -1,5 +1,6 @@
 use advent::{input_store, parsers::parse_coordinate};
 use nom::{
+    branch::alt,
     bytes::complete::{tag, take_till, take_until},
     character::complete::{anychar, char, digit0, digit1},
     combinator::{map_res, verify},
@@ -11,9 +12,16 @@ use nom::{
 const YEAR: usize = 2024;
 const DAY: usize = 03;
 
-pub fn parse_mul(input: &str) -> IResult<&str, (u32, u32)> {
+#[derive(Debug)]
+enum Instruction {
+    Mul(u32, u32),
+    Do,
+    Dont,
+}
+
+fn parse_mul(input: &str) -> IResult<&str, Instruction> {
     // println!("parsing {}", input);
-    delimited(
+    let (input, result) = delimited(
         tag("mul("),
         separated_pair(
             map_res(
@@ -27,14 +35,26 @@ pub fn parse_mul(input: &str) -> IResult<&str, (u32, u32)> {
             ),
         ),
         char(')'),
-    )(input)
+    )(input)?;
+
+    Ok((input, Instruction::Mul(result.0, result.1)))
 }
 
-fn parse_until_mul(input: &str) -> IResult<&str, (Vec<char>, (u32, u32))> {
-    many_till(anychar, parse_mul)(input)
+fn parse_do(input: &str) -> IResult<&str, Instruction> {
+    let (input, inst) = tag("do()")(input)?;
+    Ok((input, Instruction::Do))
 }
 
-pub fn parse_multiple_mul(input: &str) -> IResult<&str, Vec<(u32, u32)>> {
+fn parse_dont(input: &str) -> IResult<&str, Instruction> {
+    let (input, inst) = tag("don't()")(input)?;
+    Ok((input, Instruction::Dont))
+}
+
+fn parse_until_mul(input: &str) -> IResult<&str, (Vec<char>, Instruction)> {
+    many_till(anychar, alt((parse_mul, parse_do, parse_dont)))(input)
+}
+
+fn parse_multiple_mul(input: &str) -> IResult<&str, Vec<Instruction>> {
     let (input, results) = many0(parse_until_mul)(input)?;
 
     let pairs = results.into_iter().map(|(_, pair)| pair).collect();
@@ -46,18 +66,33 @@ fn main() {
     let input = input_store::get_input(YEAR, DAY);
 
     // let input = "xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))";
+    // let input = "xmul(2,4)&mul[3,7]!^don't()_mul(5,5)+mul(32,64](mul(11,8)undo()?mul(8,5))";
 
-    let part_1: u32 = input
-        .lines()
-        .flat_map(|line| {
-            let (_, pairs) = parse_multiple_mul(line).unwrap();
-            pairs
+    let instructions = parse_multiple_mul(&input).unwrap().1;
+
+    let part_1 = instructions
+        .iter()
+        .map(|inst| match inst {
+            Instruction::Mul(a, b) => a * b,
+            _ => 0,
         })
-        .map(|(a, b)| a * b)
-        .sum();
+        .sum::<u32>();
 
     println!("part_1 => {}", part_1);
-    println!("part_2 => {}", "not done");
+
+    let mut take = true;
+    let mut part_2 = 0;
+
+    for inst in instructions {
+        match (inst, take) {
+            (Instruction::Do, _) => take = true,
+            (Instruction::Dont, _) => take = false,
+            (Instruction::Mul(a, b), true) => part_2 += a * b,
+            (Instruction::Mul(_, _), false) => {}
+        }
+    }
+
+    println!("part_2 => {}", part_2);
 }
 
 #[cfg(test)]
