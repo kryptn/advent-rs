@@ -50,12 +50,12 @@ fn parse_dont(input: &str) -> IResult<&str, Instruction> {
     Ok((input, Instruction::Dont))
 }
 
-fn parse_until_mul(input: &str) -> IResult<&str, (Vec<char>, Instruction)> {
+fn parse_until_inst(input: &str) -> IResult<&str, (Vec<char>, Instruction)> {
     many_till(anychar, alt((parse_mul, parse_do, parse_dont)))(input)
 }
 
-fn parse_multiple_mul(input: &str) -> IResult<&str, Vec<Instruction>> {
-    let (input, results) = many0(parse_until_mul)(input)?;
+fn parse_multiple_inst(input: &str) -> IResult<&str, Vec<Instruction>> {
+    let (input, results) = many0(parse_until_inst)(input)?;
 
     let pairs = results.into_iter().map(|(_, pair)| pair).collect();
 
@@ -68,7 +68,7 @@ fn main() {
     // let input = "xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))";
     // let input = "xmul(2,4)&mul[3,7]!^don't()_mul(5,5)+mul(32,64](mul(11,8)undo()?mul(8,5))";
 
-    let instructions = parse_multiple_mul(&input).unwrap().1;
+    let instructions = parse_multiple_inst(&input).unwrap().1;
 
     let part_1 = instructions
         .iter()
