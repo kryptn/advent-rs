@@ -95,6 +95,23 @@ impl Coordinate {
         [self.up(), self.right(), self.down(), self.left()]
     }
 
+    pub fn flip(&self) -> Self {
+        (self.y, self.x).into()
+    }
+
+    pub fn cardinals_extended(&self) -> [Self; 8] {
+        [
+            self.up(),
+            self.up().right(),
+            self.right(),
+            self.down().right(),
+            self.down(),
+            self.left().left(),
+            self.left(),
+            self.left().up(),
+        ]
+    }
+
     pub fn neighbors(&self) -> [Self; 8] {
         [
             self.up(),
@@ -165,6 +182,15 @@ impl Coordinate {
 impl std::fmt::Display for Coordinate {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "({}, {})", self.x, self.y)
+    }
+}
+
+impl Default for Coordinate {
+    fn default() -> Self {
+        Self {
+            x: Default::default(),
+            y: Default::default(),
+        }
     }
 }
 
@@ -414,6 +440,7 @@ impl std::str::FromStr for Coordinate3d {
     }
 }
 
+#[rustfmt::skip]
 impl Point for Coordinate3d {
     fn range(&self, other: &Self) -> impl Iterator<Item = Self>
     where
@@ -424,7 +451,8 @@ impl Point for Coordinate3d {
         let (x_left, x_right) = sorted(self.x, other.x);
 
         (z_left..=z_right).flat_map(move |z| {
-            (y_left..=y_right).flat_map(move |y| (x_left..=x_right).map(move |x| (x, y, z).into()))
+            (y_left..=y_right).flat_map(move |y|
+                (x_left..=x_right).map(move |x| (x, y, z).into()))
         })
     }
 }
