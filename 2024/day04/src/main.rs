@@ -25,31 +25,39 @@ fn word_from(point: Coordinate, direction: Coordinate) -> [Coordinate; 4] {
     result
 }
 
+fn word_from_p2(point: Coordinate, direction: Coordinate) -> [Coordinate; 5] {
+    let a = point + direction + direction.flip();
+    let b = point + direction - direction.flip();
+    let c = point;
+    let d = point - direction + direction.flip();
+    let e = point - direction - direction.flip();
+
+    [a, b, c, d, e]
+}
+
 fn main() {
     let input = input_store::get_input(YEAR, DAY);
 
-//     let input = r#"MMMSXXMASM
-// MSAMXMSMSA
-// AMXSXMAAMM
-// MSAMASMSMX
-// XMASAMXAMM
-// XXAMMXXAMA
-// SMSMSASXSS
-// SAXAMASAAA
-// MAMMMXMMMM
-// MXMXAXMASX
-// "#;
+    //     let input = r#"MMMSXXMASM
+    // MSAMXMSMSA
+    // AMXSXMAAMM
+    // MSAMASMSMX
+    // XMASAMXAMM
+    // XXAMMXXAMA
+    // SMSMSASXSS
+    // SAXAMASAAA
+    // MAMMMXMMMM
+    // MXMXAXMASX
+    // "#;
 
     let search: Space<Coordinate, char> = Space::from(input);
     let mut found = 0;
 
     let (a, b) = search.bounding_box();
-    let inner = a + MARGIN;
-    let outer = b - MARGIN;
     for point in a.range(&b) {
         for direction in DIRECTIONS {
             let word: String = word_from(point, direction)
-                .into_iter()
+                .iter()
                 .filter_map(|c| {
                     // println!("lookin for {:?}", c);
                     search.get(&c)
@@ -65,7 +73,22 @@ fn main() {
     }
 
     println!("part_1 => {}", found);
-    println!("part_2 => {}", "not done");
+
+    let mut found = 0;
+    for point in a.range(&b) {
+        for direction in DIRECTIONS {
+            let word: String = word_from_p2(point, direction)
+                .iter()
+                .filter_map(|c| search.get(&c))
+                .collect();
+
+            if word == "MMASS" {
+                found += 1;
+            }
+        }
+    }
+
+    println!("part_2 => {}", found);
 }
 
 #[cfg(test)]
