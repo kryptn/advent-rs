@@ -15,10 +15,9 @@ generate-day year day code=code_default wait=wait_default:
 
     if [ "{{code}}" = "true" ]; then
         cp advent-rs.code-workspace advent-rs.code-workspace.bak
-        cat advent-rs.code-workspace  | jq --arg cargo_toml "./$OUT/Cargo.toml" 'if .settings."rust-analyzer.linkedProjects" | map(. == $cargo_toml) | any then . else .settings."rust-analyzer.linkedProjects" += [$cargo_toml] end' > advent-rs.code-workspace
+        cat advent-rs.code-workspace  | jq --arg cargo_toml "./$OUT/Cargo.toml" 'if .settings."rust-analyzer.linkedProjects" | map(. == $cargo_toml) | any then . else .settings."rust-analyzer.linkedProjects" += [$cargo_toml] end' > advent-rs.code-workspace.new
+        cp advent-rs.code-workspace.new advent-rs.code-workspace
     fi
-
-    cd $OUT
 
     if [ "{{wait}}" = "true" ]; then
         advent get {{year}} {{day}} --wait
