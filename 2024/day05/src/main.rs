@@ -5,43 +5,66 @@ use advent::input_store;
 const YEAR: usize = 2024;
 const DAY: usize = 05;
 
-fn validate(
+enum UpdateStatus {
+    Changed(Vec<u32>),
+    Unchanged(Vec<u32>),
+}
+
+// returns None if no change necessary
+fn fix_step(
     before: &HashMap<u32, Vec<u32>>,
     after: &HashMap<u32, Vec<u32>>,
-    updates: &Vec<u32>,
-) -> bool {
-    let mut valid = true;
+    updates: Vec<u32>,
+) -> UpdateStatus {
+    let mut cursor = 0;
+    let mut target = 0;
+    let mut broken = false;
 
-    for i in 0..updates.len() - 1 {
+    'outer: for i in 0..updates.len() - 1 {
+        cursor = 0;
         let this = updates[i];
-        let before_this = &updates[0..i];
-        let after_this = &updates[i + 1..];
-
-        // println!("update: {:?}", updates);
-        // println!("{:?}, {:?}, {:?}", before_this, this, after_this);
-
-        // dbg!(&this, &before_this, &after_this);
-
-        for b in before_this {
-            // assume complete
-
-            if let Some(bl) = before.get(b) {
-                if !bl.contains(&this) {
-                    return false;
+        while cursor < updates.len() {
+            if cursor < i {
+                let before_this = updates[cursor];
+                if let Some(bl) = before.get(&before_this) {
+                    if !bl.contains(&this) {
+                        target = i;
+                        broken = true;
+                        break 'outer;
+                    }
+                }
+            } else if cursor > i {
+                let after_this = updates[cursor];
+                if let Some(al) = after.get(&after_this) {
+                    if !al.contains(&this) {
+                        target = i;
+                        broken = true;
+                        break 'outer;
+                    }
                 }
             }
-        }
-
-        for a in after_this {
-            if let Some(al) = after.get(a) {
-                if !al.contains(&this) {
-                    return false;
-                }
-            }
+            cursor += 1;
         }
     }
 
-    true
+    if broken {
+        let mut next = updates.clone();
+        next.swap(target, cursor);
+
+        return UpdateStatus::Changed(next);
+    }
+    UpdateStatus::Unchanged(updates)
+}
+
+fn fix_updatestatus_step(
+    before: &HashMap<u32, Vec<u32>>,
+    after: &HashMap<u32, Vec<u32>>,
+    update_status: UpdateStatus,
+) -> UpdateStatus {
+    match update_status {
+        UpdateStatus::Changed(vec) => fix_step(before, after, vec.clone()),
+        UpdateStatus::Unchanged(_) => update_status,
+    }
 }
 
 fn get_middle(updates: &Vec<u32>) -> u32 {
@@ -52,54 +75,48 @@ fn get_middle(updates: &Vec<u32>) -> u32 {
 
 fn main() {
     let input = input_store::get_input(YEAR, DAY);
-//     let input = r#"47|53
-// 97|13
-// 97|61
-// 97|47
-// 75|29
-// 61|13
-// 75|53
-// 29|13
-// 97|29
-// 53|29
-// 61|53
-// 97|53
-// 61|29
-// 47|13
-// 75|47
-// 97|75
-// 47|61
-// 75|61
-// 47|29
-// 75|13
-// 53|13
+    //     let input = r#"47|53
+    // 97|13
+    // 97|61
+    // 97|47
+    // 75|29
+    // 61|13
+    // 75|53
+    // 29|13
+    // 97|29
+    // 53|29
+    // 61|53
+    // 97|53
+    // 61|29
+    // 47|13
+    // 75|47
+    // 97|75
+    // 47|61
+    // 75|61
+    // 47|29
+    // 75|13
+    // 53|13
 
-// 75,47,61,53,29
-// 97,61,53,29,13
-// 75,29,13
-// 75,97,47,61,53
-// 61,13,29
-// 97,13,75,29,47"#;
+    // 75,47,61,53,29
+    // 97,61,53,29,13
+    // 75,29,13
+    // 75,97,47,61,53
+    // 61,13,29
+    // 97,13,75,29,47"#;
 
     let input = input.split("\n\n").collect::<Vec<&str>>();
 
     let mut before = HashMap::new();
     let mut after = HashMap::new();
 
-    let rules: Vec<(u32, u32)> = input[0]
-        .trim()
-        .lines()
-        .map(|l| {
-            let parts = l.split("|").collect::<Vec<&str>>();
-            let x = parts[0].trim().parse().unwrap();
-            let y = parts[1].trim().parse().unwrap();
+    input[0].trim().lines().for_each(|l| {
+        let parts = l.split("|").collect::<Vec<&str>>();
+        let x = parts[0].trim().parse().unwrap();
+        let y = parts[1].trim().parse().unwrap();
 
-            before.entry(x).or_insert(vec![]).push(y);
-            after.entry(y).or_insert(vec![]).push(x);
-
-            (x, y)
-        })
-        .collect();
+        before.entry(x).or_insert(vec![]).push(y);
+        after.entry(y).or_insert(vec![]).push(x);
+    });
 
     // dbg!(&rules, &before, &after);
 
@@ -118,17 +135,53 @@ fn main() {
 
     let part_1: u32 = updates
         .iter()
-        .filter_map(|u| {
-            if validate(&before, &after, u) {
-                Some(get_middle(u))
-            } else {
-                None
-            }
+        .filter_map(|u| match fix_step(&before, &after, u.clone()) {
+            UpdateStatus::Changed(_) => None,
+            UpdateStatus::Unchanged(_) => Some(get_middle(u)),
         })
         .sum();
 
     println!("part_1 => {}", part_1);
-    println!("part_2 => {}", "not done");
+
+    let mut invalid_updates: Vec<UpdateStatus> = updates
+        .iter()
+        .filter_map(|u| {
+            let result = fix_step(&before, &after, u.clone());
+            match result {
+                UpdateStatus::Changed(_) => Some(result),
+                UpdateStatus::Unchanged(_) => None,
+            }
+        })
+        .collect();
+
+    while invalid_updates.iter().any(|us| match us {
+        UpdateStatus::Changed(_) => true,
+        UpdateStatus::Unchanged(_) => false,
+    }) {
+        invalid_updates = invalid_updates
+            .into_iter()
+            .map(|us| fix_updatestatus_step(&before, &after, us))
+            .collect();
+    }
+
+    let part_2: u32 = invalid_updates
+        .iter()
+        .map(|u| match u {
+            UpdateStatus::Unchanged(u) => get_middle(u),
+            _ => panic!("should not happen"),
+        })
+        .sum();
+
+    // let part_2: u32 = updates
+    //     .iter()
+    //     .filter_map(|u| match fix_step(&before, &after, u) {
+    //         Some(fixed) => Some(fixed),
+    //         None => None,
+    //     })
+    //     .filter(|u| validate(&before, &after, u))
+    //     .map(|u| get_middle(u))
+    //     .sum();
+    println!("part_2 => {}", part_2);
 }
 
 #[cfg(test)]
