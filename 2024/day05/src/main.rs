@@ -10,7 +10,8 @@ enum UpdateStatus {
     Unchanged(Vec<u32>),
 }
 
-// returns None if no change necessary
+// returns UpdateStatus::Unchanged if the update is valid
+// swaps the first two updates that break the rules and returns UpdateStatus::Changed
 fn fix_step(
     before: &HashMap<u32, Vec<u32>>,
     after: &HashMap<u32, Vec<u32>>,
@@ -133,6 +134,7 @@ fn main() {
 
     // dbg!(&updates);
 
+    // if it's unchanged it's valid
     let part_1: u32 = updates
         .iter()
         .filter_map(|u| match fix_step(&before, &after, u.clone()) {
@@ -143,6 +145,7 @@ fn main() {
 
     println!("part_1 => {}", part_1);
 
+    // get invalid updates. they'll be UpdateStatus
     let mut invalid_updates: Vec<UpdateStatus> = updates
         .iter()
         .filter_map(|u| {
@@ -154,6 +157,7 @@ fn main() {
         })
         .collect();
 
+    // loop through updates until they're all fixed
     while invalid_updates.iter().any(|us| match us {
         UpdateStatus::Changed(_) => true,
         UpdateStatus::Unchanged(_) => false,
@@ -164,6 +168,7 @@ fn main() {
             .collect();
     }
 
+    // sum middles of fixed invalid updates
     let part_2: u32 = invalid_updates
         .iter()
         .map(|u| match u {
