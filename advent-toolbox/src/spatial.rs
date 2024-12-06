@@ -15,7 +15,7 @@ pub trait Point {
         Self: Sized;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Space<P, T>(HashMap<P, T>)
 where
     P: Point;
@@ -89,6 +89,26 @@ impl Coordinate {
 
     pub fn left(&self) -> Self {
         (self.x - 1, self.y).into()
+    }
+
+    pub fn turn_left(&self) -> Self {
+        match self {
+            &UP => LEFT,
+            &LEFT => DOWN,
+            &DOWN => RIGHT,
+            &RIGHT => UP,
+            _ => panic!("Invalid direction"),
+        }
+    }
+
+    pub fn turn_right(&self) -> Self {
+        match self {
+            &UP => RIGHT,
+            &RIGHT => DOWN,
+            &DOWN => LEFT,
+            &LEFT => UP,
+            _ => panic!("Invalid direction"),
+        }
     }
 
     pub fn cardinals(&self) -> [Self; 4] {
