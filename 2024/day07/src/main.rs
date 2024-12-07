@@ -16,6 +16,18 @@ struct Problem {
     given: Vec<usize>,
 }
 
+fn concatenate_numbers(a: usize, b: usize) -> usize {
+    // Calculate number of digits in b
+    let b_digits = if b == 0 {
+        1
+    } else {
+        (b as f64).log10().ceil() as u32
+    };
+
+    // Multiply a by 10^(b_digits) and add b
+    a * 10_usize.pow(b_digits) + b
+}
+
 impl From<&str> for Problem {
     fn from(value: &str) -> Self {
         let parts: Vec<&str> = value.split(":").collect();
@@ -42,7 +54,7 @@ impl Problem {
                 match operator {
                     Operator::Add => value += g,
                     Operator::Multiply => value *= g,
-                    Operator::Concatenate => value = format!("{}{}", value, g).parse().unwrap(),
+                    Operator::Concatenate => value = concatenate_numbers(value, *g),
                 }
             }
 
