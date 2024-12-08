@@ -39,15 +39,10 @@ fn main() {
 
     let mut part_1 = HashSet::new();
 
-    for (c, coords) in stations.iter() {
+    for coords in stations.values() {
         for p in coords.iter().permutations(2) {
             let (a, b) = (p[0], p[1]);
             let dist = *b - *a;
-
-            // dbg!(a, b);
-            // dbg!(dist);
-            // dbg!(*a+dist);
-            // dbg!(*b+dist);
 
             part_1.insert(*b + dist);
         }
@@ -56,7 +51,25 @@ fn main() {
     let part_1 = part_1.iter().filter(|c| space.contains_key(c)).count();
 
     println!("part_1 => {}", part_1);
-    println!("part_2 => {}", "not done");
+
+    let mut part_2 = HashSet::new();
+
+    for coords in stations.values() {
+        for p in coords.iter().permutations(2) {
+            let (a, b) = (p[0], p[1]);
+            let dist = *b - *a;
+            part_2.insert(*b);
+            let mut antinode = *b + dist;
+            while space.contains_key(&antinode) {
+                part_2.insert(antinode);
+                antinode += dist;
+            }
+        }
+    }
+
+    let part_2 = part_2.iter().filter(|c| space.contains_key(c)).count();
+
+    println!("part_2 => {}", part_2);
 }
 
 #[cfg(test)]
