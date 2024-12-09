@@ -119,19 +119,6 @@ impl Coordinate {
         (self.y, self.x).into()
     }
 
-    pub fn cardinals_extended(&self) -> [Self; 8] {
-        [
-            self.up(),
-            self.up().right(),
-            self.right(),
-            self.down().right(),
-            self.down(),
-            self.left().left(),
-            self.left(),
-            self.left().up(),
-        ]
-    }
-
     pub fn neighbors(&self) -> [Self; 8] {
         [
             self.up(),
@@ -154,6 +141,7 @@ impl Coordinate {
         ]
     }
 
+    /// Returns the manhattan distance between two points
     pub fn distance(&self, other: &Self) -> usize {
         ((self.x - other.x).abs() + (self.y - other.y).abs()) as usize
     }
@@ -179,20 +167,16 @@ impl Coordinate {
         }
     }
 
+    /// Reduces the coordinate down to the quadrant the point is in
     pub fn normalize(&self) -> Self {
-        let x = if self.x > 0 {
-            1
-        } else if self.x < 0 {
-            -1
-        } else {
-            0
+
+        let x = match self.x {
+            0 => 0,
+            _ => self.x / self.x.abs(),
         };
-        let y = if self.y > 0 {
-            1
-        } else if self.y < 0 {
-            -1
-        } else {
-            0
+        let y = match self.y {
+            0 => 0,
+            _ => self.y / self.y.abs(),
         };
 
         (x, y).into()
