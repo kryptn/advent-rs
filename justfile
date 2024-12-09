@@ -52,10 +52,17 @@ fmt year day:
     DAY=$(printf "day%02d" $((10#{{day}})))
     cargo fmt --manifest-path {{year}}/$DAY/Cargo.toml
 
-run year day:
+run year day *opts:
     #!/usr/bin/env sh
     DAY=$(printf "day%02d" $((10#{{day}})))
-    cargo run --manifest-path {{year}}/$DAY/Cargo.toml
+    echo "{{opts}}"
+    echo "$@"
+    cargo run --manifest-path {{year}}/$DAY/Cargo.toml {{opts}}
+
+cargo year day *opts:
+    #!/usr/bin/env sh
+    DAY=$(printf "day%02d" $((10#{{day}})))
+    cargo {{opts}} --manifest-path {{year}}/$DAY/Cargo.toml 
 
 benchmark year day:
     #!/usr/bin/env sh
