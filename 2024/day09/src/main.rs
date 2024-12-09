@@ -6,26 +6,29 @@ const YEAR: usize = 2024;
 const DAY: usize = 09;
 
 
+
+#[derive(Debug, Clone)]
+struct Segment {
+    length: u32,
+    data: Option<u32>,
+}
+
+impl std::fmt::Display for Segment {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut out = String::new();
+        for _ in 0..self.length {
+            match self.data {
+                Some(v) => out.push_str(&v.to_string()),
+                None => out.push_str("."),
+            }
+        }
+        write!(f, "{}", out)
+    }
+}
+
 #[derive(Debug, Clone)]
 struct Data(Vec<Option<u32>>);
 
-
-
-impl From<&str> for Data {
-    fn from(value: &str) -> Self {
-        Self(parse_input(value))
-    }
-}
-
-impl Data {
-    fn defrag(&mut self){
-        self.0 = defrag(&self.0);
-    }
-
-    fn checksum(&self) -> usize {
-        checksum(&self.0)
-    }
-}
 
 impl std::fmt::Display for Data {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -40,7 +43,7 @@ impl std::fmt::Display for Data {
     }
 }
 
-fn parse_input(input: &str) -> Vec<Option<u32>> {
+fn parse_input_p1(input: &str) -> Vec<Option<u32>> {
     let mut id = 0;
     let mut out = vec![];
 
@@ -65,7 +68,34 @@ fn parse_input(input: &str) -> Vec<Option<u32>> {
     out
 }
 
-fn defrag(input: &Vec<Option<u32>>) -> Vec<Option<u32>> {
+fn parse_input_p2(input: &str) -> Vec<Segment> {
+    let mut out = vec![];
+    let mut id = 0;
+
+    for (i, c) in input.trim().chars().enumerate() {
+        let v = c.to_digit(10).unwrap() as u32;
+        let value = match i%2 == 0 {
+            true => Some(id),
+            false => None,
+        };
+
+        out.push(Segment {
+            length: v,
+            data: value,
+        });
+
+        if value.is_some() {
+            id += 1;
+        }
+
+
+
+    }
+
+    out
+}
+
+fn defrag_p1(input: &Vec<Option<u32>>) -> Vec<Option<u32>> {
     let mut out = input.clone();
 
     let mut outer = input.iter().enumerate().filter(|(_, v)| v.is_some()).last().unwrap().0;
@@ -86,6 +116,60 @@ fn defrag(input: &Vec<Option<u32>>) -> Vec<Option<u32>> {
     out
 }
 
+fn defrag_p2(input: &Vec<Segment>) -> Vec<Segment> {
+    let mut out = input.clone();
+
+    let mut outer = input.iter().enumerate().filter(|(_, v)| v.data.is_some()).last().unwrap().0;
+    while outer > 0 {
+
+        // println!("{:?}", out.iter().map(|s| format!("{}", s)).collect::<Vec<String>>());
+        // println!("{}\n\n", Data(convert_to_p1(&out)));
+
+        if out[outer].data.is_none() {
+            outer -= 1;
+            continue;
+        }
+        let mut i = 0;
+
+        while i < outer {
+            // println!("i: {} -> {}, outer: {} -> {}", i, out[i], outer, out[outer]);
+            if out[i].data.is_none() && out[i].length >= out[outer].length {
+                out[i].data = out[outer].data;
+
+                if out[i].length > out[outer].length {
+                    out.insert(i+1, Segment {
+                        length: out[i].length - out[outer].length,
+                        data: None,
+                    });
+                    outer += 1;
+
+                }
+                out[i].length = out[outer].length;
+                out[outer].data = None;
+
+                break;
+            }
+            i += 1;
+        }
+        outer -= 1;
+
+    }
+
+    out
+}
+
+fn convert_to_p1(input: &Vec<Segment>) -> Vec<Option<u32>> {
+    let mut out = vec![];
+
+    for s in input {
+        for _ in 0..s.length {
+            out.push(s.data);
+        }
+    }
+
+    out
+}
+
 fn checksum(input: &Vec<Option<u32>>) -> usize {
     input.iter().enumerate().map(|(idx, id)| {
         let o = match id {
@@ -100,18 +184,20 @@ fn checksum(input: &Vec<Option<u32>>) -> usize {
 
 fn main() {
     let input = input_store::get_input(YEAR, DAY);
-    let data: Data = input.as_str().into();
+    let data = parse_input_p1(&input);
 
     // let input = "2333133121414131402";
-    // let data: Data = input.into();
+    // let data = parse_input_p1(input);
 
     // println!("{}", data);
 
-    let mut part_1 = data.clone();
-    part_1.defrag();
+    let part_1 = defrag_p1(&data);
+    println!("part_1 => {}", checksum(&part_1));
 
-    println!("part_1 => {}", part_1.checksum());
-    println!("part_2 => {}", "not done");
+    let part_2 = parse_input_p2(&input);
+    let part_2 = defrag_p2(&part_2);
+    let part_2 = convert_to_p1(&part_2);
+    println!("part_2 => {}", checksum(&part_2));
 }
 
 #[cfg(test)]
