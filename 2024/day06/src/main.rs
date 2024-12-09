@@ -1,17 +1,24 @@
-use std::collections::HashMap;
+use std::{
+    collections::{HashMap, HashSet, VecDeque},
+    sync::Mutex,
+    thread::sleep,
+    time::Duration,
+};
 
 use advent::input_store;
-use advent_toolbox::spatial::{Coordinate, Space, ORIGIN, UP};
+use advent_toolbox::spatial::{Coordinate, Space, DOWN, ORIGIN, UP};
 
 const YEAR: usize = 2024;
 const DAY: usize = 06;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 enum Tile {
     #[default]
     Open,
     Closed,
+    PotentiallyClosed,
     Agent(Agent),
+    Visited(HashSet<Agent>),
 }
 
 impl std::fmt::Display for Tile {
@@ -19,9 +26,29 @@ impl std::fmt::Display for Tile {
         let c = match self {
             Self::Open => '.',
             Self::Closed => '#',
+            Self::PotentiallyClosed => 'O',
+            Self::Visited(agents) => {
+                let mut vertical = false;
+                let mut horizontal = false;
+
+                for agent in agents {
+                    if agent.direction == UP || agent.direction == DOWN {
+                        vertical = true;
+                    } else {
+                        horizontal = true;
+                    }
+                }
+
+                match (vertical, horizontal) {
+                    (true, true) => '+',
+                    (true, false) => '|',
+                    (false, true) => '-',
+                    _ => panic!("Invalid direction"),
+                }
+            }
             Self::Agent(agent) => match agent.direction {
-                Coordinate { x: 0, y: 1 } => 'v',
-                Coordinate { x: 0, y: -1 } => '^',
+                Coordinate { x: 0, y: 1 } => '^',
+                Coordinate { x: 0, y: -1 } => 'v',
                 Coordinate { x: 1, y: 0 } => '>',
                 Coordinate { x: -1, y: 0 } => '<',
                 _ => panic!("Invalid direction"),
@@ -31,10 +58,54 @@ impl std::fmt::Display for Tile {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 struct Agent {
     position: Coordinate,
     direction: Coordinate,
+}
+
+impl Agent {
+    fn forward(&self) -> Self {
+        Self {
+            position: self.position + self.direction,
+            direction: self.direction,
+        }
+    }
+
+    fn backward(&self) -> Self {
+        Self {
+            position: self.position - self.direction,
+            direction: self.direction,
+        }
+    }
+
+    fn turn_right(&self) -> Self {
+        Self {
+            position: self.position,
+            direction: self.direction.turn_right(),
+        }
+    }
+
+    fn turn_left(&self) -> Self {
+        Self {
+            position: self.position,
+            direction: self.direction.turn_left(),
+        }
+    }
+
+    fn strafe_left(&self) -> Self {
+        Self {
+            position: self.position + self.direction.turn_left(),
+            direction: self.direction,
+        }
+    }
+
+    fn strafe_right(&self) -> Self {
+        Self {
+            position: self.position + self.direction.turn_right(),
+            direction: self.direction,
+        }
+    }
 }
 
 impl From<char> for Tile {
@@ -63,7 +134,7 @@ fn step(lab: &Lab, agent: &Agent) -> Option<Agent> {
                 position: next_step,
                 direction: agent.direction,
             }),
-            Tile::Closed => Some(Agent {
+            Tile::Closed | Tile::PotentiallyClosed => Some(Agent {
                 position: agent.position,
                 direction: agent.direction.turn_right(),
             }),
@@ -74,6 +145,17 @@ fn step(lab: &Lab, agent: &Agent) -> Option<Agent> {
     // dbg!(&agent);
 
     None
+}
+
+fn print_debug_lab(lab: &Lab, agent: &Agent, agents: &HashMap<Coordinate, HashSet<Agent>>) {
+    let mut debug_lab = lab.clone();
+
+    for visited_tile in agents.keys() {
+        *debug_lab.get_mut(visited_tile).unwrap() = Tile::Visited(agents[visited_tile].clone());
+    }
+    *debug_lab.get_mut(&agent.position).unwrap() = Tile::Agent(agent.clone());
+    print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
+    println!("\n\n{:?}\n\n", debug_lab);
 }
 
 fn main() {
@@ -95,13 +177,20 @@ fn main() {
     let guard = lab.find(|t| matches!(t, Tile::Agent(_))).unwrap();
     *lab.get_mut(&guard).unwrap() = Tile::Open;
 
-    let mut agent = Agent {
+    let initial_agent = Agent {
         position: guard,
-        direction: Coordinate::new(0, 1),
+        direction: UP,
     };
 
-    let mut visited: HashMap<Coordinate, usize> = HashMap::new();
-    *visited.entry(agent.position).or_insert(0) += 1;
+    let mut agent = initial_agent.clone();
+
+    let mut visited: HashMap<Coordinate, HashSet<Agent>> = HashMap::new();
+    visited
+        .entry(agent.position)
+        .or_insert(HashSet::new())
+        .insert(agent.clone());
+
+    let mut path = vec![agent.clone()];
 
     while let Some(next_agent) = step(&lab, &agent) {
         // let mut lab_p = lab.clone();
@@ -109,11 +198,59 @@ fn main() {
         // println!("{}", lab_p);
 
         agent = next_agent;
-        *visited.entry(agent.position).or_insert(0) += 1;
+        visited
+            .entry(agent.position)
+            .or_insert(HashSet::new())
+            .insert(agent.clone());
+        path.push(agent);
     }
 
     println!("part_1 => {}", visited.len());
-    println!("part_2 => {}", "not done");
+
+    let mut loop_potentials = HashSet::new();
+    loop_potentials.insert(initial_agent.position);
+
+    let mut new_visited: HashMap<Coordinate, HashSet<Agent>> = HashMap::new();
+    for this_agent in path {
+        let mut this_agent = this_agent.clone();
+        new_visited
+            .entry(this_agent.position)
+            .or_insert(HashSet::new())
+            .insert(this_agent.clone());
+
+        let next_position = this_agent.position + this_agent.direction;
+
+        if loop_potentials.contains(&next_position) {
+            continue;
+        }
+
+        this_agent = initial_agent.clone();
+
+        if let Some(Tile::Open) = lab.get(&next_position) {
+            let mut this_visited: HashMap<Coordinate, HashSet<Agent>> = HashMap::new();
+            let mut this_lab = lab.clone();
+            this_lab.insert(next_position, Tile::PotentiallyClosed);
+
+            while let Some(next_agent) = step(&this_lab, &this_agent) {
+                this_agent = next_agent;
+                if let Some(agents) = this_visited.get(&this_agent.position) {
+                    if agents.contains(&this_agent) {
+                        loop_potentials.insert(next_position);
+                        // print_debug_lab(&this_lab, &this_agent, &this_visited);
+                        // sleep(Duration::from_millis(100));
+                        break;
+                    }
+                }
+                this_visited
+                    .entry(this_agent.position)
+                    .or_insert(HashSet::new())
+                    .insert(this_agent.clone());
+            }
+        }
+    }
+
+    println!("part_2 => {}", loop_potentials.len() - 1);
+    println!("1354 too high");
 }
 
 #[cfg(test)]

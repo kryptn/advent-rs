@@ -47,6 +47,11 @@ fmt-all year=year_default:
 
     rg -g '**/Cargo.toml' --files | xargs -I{} cargo fmt --manifest-path {}
 
+fmt year day:
+    #!/usr/bin/env sh
+    DAY=$(printf "day%02d" $((10#{{day}})))
+    cargo fmt --manifest-path {{year}}/$DAY/Cargo.toml
+
 run year day:
     #!/usr/bin/env sh
     DAY=$(printf "day%02d" $((10#{{day}})))
