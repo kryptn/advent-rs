@@ -5,7 +5,7 @@ generate-day year day code=code_default wait=wait_default:
     #!/usr/bin/env sh
     YEAR={{year}}
     DAY={{day}}
-    NORMALIZED_DAY=$(printf "%02d" $DAY)
+    NORMALIZED_DAY=$(printf "%02d" $((10#$DAY)))
     OUT="$YEAR/day$NORMALIZED_DAY"
 
     mkdir -p $OUT/src
@@ -49,11 +49,11 @@ fmt-all year=year_default:
 
 run year day:
     #!/usr/bin/env sh
-    DAY=$(printf "day%02d" {{day}})
+    DAY=$(printf "day%02d" $((10#{{day}})))
     cargo run --manifest-path {{year}}/$DAY/Cargo.toml
 
 benchmark year day:
     #!/usr/bin/env sh
-    DAY=$(printf "day%02d" {{day}})
+    DAY=$(printf "day%02d" $((10#{{day}})))
     cargo build --release --manifest-path {{year}}/$DAY/Cargo.toml
     hyperfine --warmup 3 -N "{{year}}/$DAY/target/release/$DAY"
