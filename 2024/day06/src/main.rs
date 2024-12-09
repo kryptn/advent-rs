@@ -7,6 +7,7 @@ use std::{
 
 use advent::input_store;
 use advent_toolbox::spatial::{Coordinate, Space, DOWN, ORIGIN, UP};
+use rayon::prelude::*;
 
 const YEAR: usize = 2024;
 const DAY: usize = 06;
@@ -210,47 +211,48 @@ fn main() {
     let mut loop_potentials = HashSet::new();
     loop_potentials.insert(initial_agent.position);
 
-    let mut new_visited: HashMap<Coordinate, HashSet<Agent>> = HashMap::new();
-    for this_agent in path {
-        let mut this_agent = this_agent.clone();
-        new_visited
-            .entry(this_agent.position)
-            .or_insert(HashSet::new())
-            .insert(this_agent.clone());
+    loop_potentials.extend(
+        path.par_iter()
+            .filter_map(|agent| {
+                let mut this_agent = agent.clone();
 
-        let next_position = this_agent.position + this_agent.direction;
+                let mut is_loop = false;
+                let next_position = this_agent.position + this_agent.direction;
 
-        if loop_potentials.contains(&next_position) {
-            continue;
-        }
+                if !loop_potentials.contains(&next_position) {
+                    this_agent = initial_agent.clone();
+                    if let Some(Tile::Open) = lab.get(&next_position) {
+                        let mut this_visited: HashMap<Coordinate, HashSet<Agent>> = HashMap::new();
+                        let mut this_lab = lab.clone();
+                        this_lab.insert(next_position, Tile::PotentiallyClosed);
 
-        this_agent = initial_agent.clone();
-
-        if let Some(Tile::Open) = lab.get(&next_position) {
-            let mut this_visited: HashMap<Coordinate, HashSet<Agent>> = HashMap::new();
-            let mut this_lab = lab.clone();
-            this_lab.insert(next_position, Tile::PotentiallyClosed);
-
-            while let Some(next_agent) = step(&this_lab, &this_agent) {
-                this_agent = next_agent;
-                if let Some(agents) = this_visited.get(&this_agent.position) {
-                    if agents.contains(&this_agent) {
-                        loop_potentials.insert(next_position);
-                        // print_debug_lab(&this_lab, &this_agent, &this_visited);
-                        // sleep(Duration::from_millis(100));
-                        break;
+                        while let Some(next_agent) = step(&this_lab, &this_agent) {
+                            this_agent = next_agent;
+                            if let Some(agents) = this_visited.get(&this_agent.position) {
+                                if agents.contains(&this_agent) {
+                                    is_loop = true;
+                                    // print_debug_lab(&this_lab, &this_agent, &this_visited);
+                                    // sleep(Duration::from_millis(100));
+                                    break;
+                                }
+                            }
+                            this_visited
+                                .entry(this_agent.position)
+                                .or_insert(HashSet::new())
+                                .insert(this_agent.clone());
+                        }
                     }
                 }
-                this_visited
-                    .entry(this_agent.position)
-                    .or_insert(HashSet::new())
-                    .insert(this_agent.clone());
-            }
-        }
-    }
+
+                match is_loop {
+                    true => Some(next_position),
+                    false => None,
+                }
+            })
+            .collect::<HashSet<_>>(),
+    );
 
     println!("part_2 => {}", loop_potentials.len() - 1);
-    println!("1354 too high");
 }
 
 #[cfg(test)]
