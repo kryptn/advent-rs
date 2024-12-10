@@ -7,8 +7,9 @@ edition = "2018"
 
 [dependencies]
 advent = { path = "../../advent", features = ["parse"] }
-advent-toolbox = { version = "0.1.0", path = "../../advent-toolbox" }
+advent-toolbox = { version = "0.1.0", path = "../../advent-toolbox", features = ["petgraph"] }
 rstest = "0.23.0"
 anyhow = "1.0.93"
 itertools = "0.13.0"
 nom = "7.1.3"
+petgraph = "0.6.5"
