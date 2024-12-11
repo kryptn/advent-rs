@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use advent::input_store;
 
 const YEAR: usize = 2024;
@@ -30,28 +32,53 @@ impl Stone {
     }
 }
 
+struct Stones(HashMap<u64, usize>);
+
+impl Stones {
+    fn blink(&self) -> Self {
+        let mut new_stones = HashMap::new();
+        for (stone, count) in self.0.iter() {
+            for next_stone in Stone(*stone).next() {
+                *new_stones.entry(next_stone.0).or_insert(0) += count;
+            }
+        }
+
+        Self(new_stones)
+    }
+
+    fn len(&self) -> usize {
+        self.0.values().sum()
+    }
+}
+
+impl From<String> for Stones {
+    fn from(input: String) -> Self {
+        let mut stones_map = HashMap::new();
+        input.trim().split(" ").for_each(|x| {
+            let stone = x.parse().unwrap();
+            *stones_map.entry(stone).or_insert(0) += 1;
+        });
+        Self(stones_map)
+
+    }
+}
+
 fn main() {
     let input = input_store::get_input(YEAR, DAY);
-    let mut rocks = input.trim().split(" ").map(|x| Stone(x.parse().unwrap())).collect::<Vec<Stone>>();
-
+    let mut stones = Stones::from(input);
 
     const FIRST: i32 = 25;
-    for n in 1..=FIRST {
-
-        rocks = rocks.iter().flat_map(|x| x.next()).collect();
-        println!("blinks: {n}, rocks.len: {}", rocks.len());
-        println!("rocks: {}\n", rocks.iter().map(|x| x.to_string()).collect::<Vec<String>>().join(" "));
+    for _n in 1..=FIRST {
+        stones = stones.blink();
+        // println!("blinks: {_n}, rocks.len: {}", stones.len());
     }
-    println!("part_1 => {}", rocks.len());
+    println!("part_1 => {}", stones.len());
 
-    // lol this will not work
-    for n in 1..=50 {
-        rocks = rocks.iter().flat_map(|x| x.next()).collect();
-        println!("blinks: {}, rocks: {}", n + FIRST, rocks.len());
+    for _n in 1..=50 {
+        stones = stones.blink();
+        // println!("blinks: {}, stones: {}", _n + FIRST, stones.len());
     }
-
-
-    println!("part_2 => {}", rocks.len());
+    println!("part_2 => {}", stones.len());
 }
 
 #[cfg(test)]
