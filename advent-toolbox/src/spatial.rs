@@ -15,7 +15,7 @@ pub trait Point {
         Self: Sized;
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Space<P, T>(HashMap<P, T>)
 where
     P: Point;
@@ -705,6 +705,32 @@ impl<V> Space<Coordinate, V> {
         out
     }
 
+    pub fn bfs(&self, start: &Coordinate, edges: impl Fn(&Self, &Coordinate) -> Vec<Coordinate>) -> Vec<Coordinate> {
+        let mut out = Vec::new();
+        let mut queue = VecDeque::new();
+        let mut visited = HashSet::new();
+
+        queue.push_back(*start);
+
+        while let Some(current) = queue.pop_front() {
+            if visited.contains(&current) {
+                continue;
+            }
+
+            visited.insert(current);
+            out.push(current);
+
+            for next in edges(self, &current) {
+                queue.push_back(next);
+            }
+        }
+
+        out
+    }
+
+    
+
+
     pub fn rows(&self) -> impl Iterator<Item = impl Iterator<Item = (Coordinate, &V)>> {
         let (lower, upper) = self.bounding_box();
         let mut out = Vec::new();
@@ -785,6 +811,32 @@ where
         write!(f, "{out}")
     }
 }
+
+impl<V> std::fmt::Debug for Space<Coordinate, V>
+where
+    V: std::fmt::Debug + std::fmt::Display + Default + Clone,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut out = String::new();
+        let (lower, upper) = self.bounding_box();
+
+        for y in lower.y..=upper.y {
+            let y = upper.y - y;
+            for x in lower.x..=upper.x {
+                let coord = (x, y).into();
+                let item = self.get(&coord).unwrap_or(&V::default()).clone();
+                out.push_str(&format!("{item}"));
+            }
+            out.push('\n');
+        }
+        write!(f, "{out}")
+    }
+}
+
+
+
+
+
 
 #[derive(Copy, Clone, Debug)]
 pub enum Cardinal {
