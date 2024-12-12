@@ -50,6 +50,8 @@ fn main() {
                 })
                 .collect()
         };
+
+        // valid edges are those that have the same plant
         let nodes = fields.bfs(coord, &edges);
         let region_id = regions.len();
         regions.insert(region_id, nodes.clone().into_iter().collect());
@@ -64,12 +66,12 @@ fn main() {
         part_1 += area * perimeter;
     }
 
+    // convert fields to Option<char> and pad it with None
+    // allows comparison of the edge of the map and outside it
     let (fields_lower, fields_upper) = fields.bounding_box();
     let one = Coordinate::new(1, 1);
-    let fields_lower = fields_lower - one;
-    let fields_upper = fields_upper + one;
     let padded_fields: Space<Coordinate, Option<char>> =
-        coordinates_within(fields_lower, fields_upper)
+        coordinates_within(fields_lower - one, fields_upper + one)
             .iter()
             .map(|c| match fields.get(c) {
                 Some(p) => (c.clone(), Some(*p)),
@@ -77,6 +79,8 @@ fn main() {
             })
             .collect();
 
+    // tuple_windows across rows and columns
+    // we ultimately want to compare every two adjacent cells
     padded_fields
         .rows()
         .tuple_windows()
@@ -92,11 +96,13 @@ fn main() {
                 .tuple_windows()
                 .map(|(a, b)| (a.collect(), b.collect())),
         )
-        .for_each(|(a, b)| {
+        // we are iterating over windows of rows and columns
+        .for_each(|(line_a, line_b)| {
             let mut prev_a = None;
             let mut prev_b = None;
 
-            for (a, b) in a.into_iter().zip(b.into_iter()) {
+            // zip them together to compare just two adjacent cells
+            for (a, b) in line_a.into_iter().zip(line_b.into_iter()) {
                 // println!("\n\n\n");
                 // std::thread::sleep(std::time::Duration::from_millis(1000));
 
@@ -165,17 +171,17 @@ fn main() {
     // dbg!(&regions);
     // dbg!(&region_sides);
 
-    for (region_id, nodes) in &regions {
-        let sides = region_sides.get(&region_id).unwrap();
-        let name = nodes.iter().next().unwrap();
-        let name = fields.get(name).unwrap();
+    // for (region_id, nodes) in &regions {
+    //     let sides = region_sides.get(&region_id).unwrap();
+    //     let name = nodes.iter().next().unwrap();
+    //     let name = fields.get(name).unwrap();
 
-        // println!(
-        //     "A region of {name} plants with price {} * {sides} = {}",
-        //     nodes.len(),
-        //     nodes.len() * sides
-        // );
-    }
+    //     println!(
+    //         "A region of {name} plants with price {} * {sides} = {}",
+    //         nodes.len(),
+    //         nodes.len() * sides
+    //     );
+    // }
 
     let part_2: usize = region_sides
         .iter()
