@@ -728,10 +728,10 @@ impl<V> Space<Coordinate, V> {
         out
     }
 
-    
 
 
-    pub fn rows(&self) -> impl Iterator<Item = impl Iterator<Item = (Coordinate, &V)>> {
+
+    pub fn rows(&self) -> impl Iterator<Item = impl Iterator<Item = (Coordinate, &V)> + Clone> {
         let (lower, upper) = self.bounding_box();
         let mut out = Vec::new();
         for y in lower.y..=upper.y {
@@ -747,7 +747,7 @@ impl<V> Space<Coordinate, V> {
         out.into_iter()
     }
 
-    pub fn columns(&self) -> impl Iterator<Item = impl Iterator<Item = (Coordinate, &V)>> {
+    pub fn columns(&self) -> impl Iterator<Item = impl Iterator<Item = (Coordinate, &V)> + Clone> {
         let (lower, upper) = self.bounding_box();
         let mut out = Vec::new();
         for x in lower.x..=upper.x {
@@ -762,6 +762,7 @@ impl<V> Space<Coordinate, V> {
         }
         out.into_iter()
     }
+
 
     pub fn x_bounds(&self) -> (isize, isize) {
         let (lower, upper) = self.bounding_box();
