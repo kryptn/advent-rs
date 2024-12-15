@@ -213,6 +213,8 @@ impl AddAssign<Coordinate> for Coordinate {
     }
 }
 
+
+
 impl Sub<Coordinate> for Coordinate {
     type Output = Self;
 
@@ -248,6 +250,14 @@ impl Rem<Coordinate> for Coordinate {
 
     fn rem(self, rhs: Coordinate) -> Self::Output {
         (self.x.rem_euclid(rhs.x), self.y.rem_euclid(rhs.y)).into()
+    }
+}
+
+impl Mul<Coordinate> for Coordinate {
+    type Output = Coordinate;
+
+    fn mul(self, rhs: Coordinate) -> Self::Output {
+        (self.x * rhs.x, self.y * rhs.y).into()
     }
 }
 
@@ -894,6 +904,18 @@ impl Add<Direction> for Coordinate {
             Direction::Down => self.down(),
             Direction::Left => self.left(),
             Direction::None => self,
+        }
+    }
+}
+
+impl AddAssign<Direction> for Coordinate {
+    fn add_assign(&mut self, rhs: Direction) {
+        match rhs {
+            Direction::Up => self.y += 1,
+            Direction::Right => self.x += 1,
+            Direction::Down => self.y -= 1,
+            Direction::Left => self.x -= 1,
+            Direction::None => {}
         }
     }
 }
