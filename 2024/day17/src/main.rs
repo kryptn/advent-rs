@@ -74,7 +74,7 @@ impl Machine {
 
     fn output_string(&self) -> String {
         self.output.iter().join(",")
-    }g
+    }
 
     fn with_octets(&self, octets: Vec<u8>) -> Self {
         let a = octets_as_usize(&octets);
