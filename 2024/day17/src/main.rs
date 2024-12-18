@@ -1,4 +1,4 @@
-use std::convert::TryFrom;
+use std::{convert::TryFrom, usize::MAX};
 
 use advent::input_store;
 use advent_toolbox::parser_helpers::just_numbers;
@@ -18,24 +18,6 @@ enum Instruction {
     BDV,
     CDV,
 }
-
-// impl TryFrom<&str> for Instruction {
-//     type Error = &'static str;
-
-//     fn try_from(value: &str) -> Result<Self, Self::Error> {
-//         match value {
-//             "0" => Ok(Instruction::ADV),
-//             "1" => Ok(Instruction::BXL),
-//             "2" => Ok(Instruction::BST),
-//             "3" => Ok(Instruction::JNZ),
-//             "4" => Ok(Instruction::BXC),
-//             "5" => Ok(Instruction::OUT),
-//             "6" => Ok(Instruction::BDV),
-//             "7" => Ok(Instruction::CDV),
-//             _ => Err("Invalid instruction"),
-//         }
-//     }
-// }
 
 impl TryFrom<u8> for Instruction {
     type Error = &'static str;
@@ -65,8 +47,6 @@ struct Machine {
     instructions: Vec<u8>,
 
     output: Vec<u8>,
-
-    desc: String,
 }
 
 impl Machine {
@@ -92,35 +72,24 @@ impl Machine {
         instruction
     }
 
-    fn run(&self) -> Self {
+    fn output_string(&self) -> String {
+        self.output.iter().join(",")
+    }g
+
+    fn with_octets(&self, octets: Vec<u8>) -> Self {
+        let a = octets_as_usize(&octets);
+
+        Self { a, ..self.clone() }
+    }
+
+    fn run_output(&self) -> Vec<u8> {
         let mut out = self.clone();
-        println!("{}", out);
-
         while let Some(m) = out.next() {
-            println!("{}", m);
-
             out = m;
         }
 
-        out
+        out.output
     }
-
-    fn output_string(&self) -> String {
-        self.output.iter().join(",")
-    }
-
-    // fn new_from_instructions(input: &str) -> Self {
-    //     let instructions= just_numbers(input);
-
-    //     Self {
-    //         a: 0,
-    //         b: 0,
-    //         c: 0,
-    //         pointer: 0,
-    //         instructions,
-    //         output: vec![],
-    //     }
-    // }
 }
 
 impl std::fmt::Display for Machine {
@@ -130,15 +99,14 @@ impl std::fmt::Display for Machine {
         write!(f, "Register C: {}\n", self.c)?;
 
         let mut padding = "   ".repeat(self.pointer + 1);
-        if self.pointer > 10 {
+        if self.pointer >= 10 {
             padding = padding[1..].to_string();
         }
-        if self.pointer > 100 {
+        if self.pointer >= 100 {
             padding = padding[1..].to_string();
         }
         write!(f, "Pointer: {}{padding} v\n", self.pointer)?;
         write!(f, "Program:     {:?}\n", self.instructions)?;
-        write!(f, "last instruction desc: {}\n", self.desc)?;
         write!(f, "Output: {:?}\n\n", self.output)
     }
 }
@@ -160,7 +128,6 @@ impl From<&str> for Machine {
             pointer: 0,
             instructions,
             output: vec![],
-            desc: "".to_string(),
         }
     }
 }
@@ -178,47 +145,39 @@ impl Iterator for Machine {
         match out.instruction(out.pointer) {
             Instruction::ADV => {
                 let denominator = 2usize.pow(out.combo(out.pointer + 1) as u32);
+
                 out.a = (out.a as f64 / denominator as f64).trunc() as usize;
-                out.desc = format!("ADV: a = {} / 2^{}", self.a, out.combo(out.pointer + 1));
             }
             Instruction::BXL => {
                 // bitwise xor
+
                 out.b = out.b ^ out.literal(out.pointer + 1);
-                out.desc = format!("BXL: b = {} ^ {}", self.b, out.literal(out.pointer + 1));
             }
             Instruction::BST => {
                 // mod 8
                 out.b = out.combo(out.pointer + 1) % 8;
-                out.desc = format!("BST: b = {} % 8", self.b);
             }
             Instruction::JNZ => {
                 if out.a != 0 {
                     out.pointer = out.literal(out.pointer + 1);
                     jumped = true;
-                    out.desc = format!("JNZ: a != 0, jump to {}", out.pointer);
-                } else {
-                    out.desc = format!("JNZ: a == 0");
                 }
             }
             Instruction::BXC => {
                 // bitwise xor b c
                 out.b = out.b ^ out.c;
-                out.desc = format!("BXC: b = {} ^ {}", self.b, self.c);
             }
             Instruction::OUT => {
                 let value = out.combo(out.pointer + 1) % 8;
                 out.output.push(value as u8);
-                out.desc = format!("OUT: output {}", value);
             }
             Instruction::BDV => {
                 let denominator = 2usize.pow(out.combo(out.pointer + 1) as u32);
                 out.b = (out.a as f64 / denominator as f64).trunc() as usize;
-                out.desc = format!("BDV: b = {} / 2^{}", self.a, out.combo(out.pointer + 1));
             }
             Instruction::CDV => {
                 let denominator = 2usize.pow(out.combo(out.pointer + 1) as u32);
                 out.c = (out.a as f64 / denominator as f64).trunc() as usize;
-                out.desc = format!("CDV: c = {} / 2^{}", self.a, out.combo(out.pointer + 1));
             }
         }
 
@@ -230,23 +189,73 @@ impl Iterator for Machine {
     }
 }
 
+fn octets_as_usize(octets: &Vec<u8>) -> usize {
+    let mut a = 0;
+    for octet in octets {
+        a = a << 3 | *octet as usize;
+    }
+    a
+}
+
+fn find(machine: &Machine, a: Vec<u8>, expected: &Vec<u8>) -> Vec<(Machine, Vec<u8>)> {
+    let initial = machine.with_octets(a.clone());
+    let initial_output = initial.run_output();
+    // print_details(&a, &initial_output, machine);
+    if initial_output == *expected {
+        return vec![(initial, a)];
+    } else if initial_output.len() > expected.len() {
+        return vec![];
+    }
+
+    if expected[expected.len() - a.len()] != initial_output[initial_output.len() - a.len()] {
+        return vec![];
+    }
+
+    let mut out = vec![];
+
+    for x in 0..8 {
+        let mut next = a.clone();
+        next.push(x as u8);
+        out.extend(find(machine, next, expected));
+    }
+    out
+}
+
 fn main() {
     let input = input_store::get_input(YEAR, DAY);
 
     let machine = Machine::from(input.as_str());
 
     let mut running_machine = machine.clone();
-    // println!("{}", running_machine);
     while let Some(m) = running_machine.next() {
-        // println!("{}", m);
-        // std::thread::sleep(std::time::Duration::from_millis(100));
         running_machine = m;
     }
 
-    println!("{}", running_machine);
-
     println!("part_1 => {}", running_machine.output_string());
-    println!("part_2 => {}", "not done");
+    let expected = machine.instructions.clone();
+
+    let (mut part_2, mut octets) = (0..8)
+        .into_iter()
+        .flat_map(|x| find(&machine, vec![x], &expected))
+        .min_by(|a, b| a.0.a.cmp(&b.0.a))
+        .unwrap();
+
+    let mut changed = true;
+    while changed {
+        changed = false;
+        for i in 0..8 {
+            let mut test = octets.clone();
+            test[i] -= 1;
+            let test_machine = machine.with_octets(test.clone());
+            if test_machine.run_output() == expected && test_machine.a < part_2.a {
+                changed = true;
+                part_2 = test_machine;
+                octets = test;
+            }
+        }
+    }
+
+    println!("part_2 => {:?}", part_2.a);
 }
 
 #[cfg(test)]
