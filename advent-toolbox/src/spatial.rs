@@ -169,7 +169,6 @@ impl Coordinate {
 
     /// Reduces the coordinate down to the quadrant the point is in
     pub fn normalize(&self) -> Self {
-
         let x = match self.x {
             0 => 0,
             _ => self.x / self.x.abs(),
@@ -212,8 +211,6 @@ impl AddAssign<Coordinate> for Coordinate {
         self.y += rhs.y;
     }
 }
-
-
 
 impl Sub<Coordinate> for Coordinate {
     type Output = Self;
@@ -715,7 +712,11 @@ impl<V> Space<Coordinate, V> {
         out
     }
 
-    pub fn bfs(&self, start: &Coordinate, edges: impl Fn(&Self, &Coordinate) -> Vec<Coordinate>) -> Vec<Coordinate> {
+    pub fn bfs(
+        &self,
+        start: &Coordinate,
+        edges: impl Fn(&Self, &Coordinate) -> Vec<Coordinate>,
+    ) -> Vec<Coordinate> {
         let mut out = Vec::new();
         let mut queue = VecDeque::new();
         let mut visited = HashSet::new();
@@ -737,8 +738,6 @@ impl<V> Space<Coordinate, V> {
 
         out
     }
-
-
 
 
     pub fn rows(&self) -> impl Iterator<Item = impl Iterator<Item = (Coordinate, &V)> + Clone> {
@@ -772,7 +771,6 @@ impl<V> Space<Coordinate, V> {
         }
         out.into_iter()
     }
-
 
     pub fn x_bounds(&self) -> (isize, isize) {
         let (lower, upper) = self.bounding_box();
@@ -843,11 +841,6 @@ where
         write!(f, "{out}")
     }
 }
-
-
-
-
-
 
 #[derive(Copy, Clone, Debug)]
 pub enum Cardinal {
@@ -982,6 +975,20 @@ impl From<Direction> for Coordinate {
             Direction::Down => (0isize, -1).into(),
             Direction::Left => (-1isize, 0).into(),
             Direction::None => (0isize, 0).into(),
+        }
+    }
+}
+
+impl TryFrom<Coordinate> for Direction {
+    type Error = ();
+
+    fn try_from(value: Coordinate) -> Result<Self, Self::Error> {
+        match value {
+            UP => Ok(Direction::Up),
+            RIGHT => Ok(Direction::Right),
+            DOWN => Ok(Direction::Down),
+            LEFT => Ok(Direction::Left),
+            _ => Err(()),
         }
     }
 }
@@ -1130,6 +1137,56 @@ impl Line for (Coordinate, Coordinate) {
         }
 
         None
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
+pub struct Agent {
+    pub position: Coordinate,
+    pub direction: Coordinate,
+}
+
+impl Agent {
+    pub fn forward(&self) -> Self {
+        Self {
+            position: self.position + self.direction,
+            direction: self.direction,
+        }
+    }
+
+    pub fn backward(&self) -> Self {
+        Self {
+            position: self.position - self.direction,
+            direction: self.direction,
+        }
+    }
+
+    pub fn turn_right(&self) -> Self {
+        Self {
+            position: self.position,
+            direction: self.direction.turn_right(),
+        }
+    }
+
+    pub fn turn_left(&self) -> Self {
+        Self {
+            position: self.position,
+            direction: self.direction.turn_left(),
+        }
+    }
+
+    pub fn strafe_left(&self) -> Self {
+        Self {
+            position: self.position + self.direction.turn_left(),
+            direction: self.direction,
+        }
+    }
+
+    pub fn strafe_right(&self) -> Self {
+        Self {
+            position: self.position + self.direction.turn_right(),
+            direction: self.direction,
+        }
     }
 }
 
