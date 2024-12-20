@@ -1,11 +1,10 @@
-use std::{
-    collections::{HashMap, HashSet},
-    iter::repeat,
-};
+use std::{collections::HashSet, iter::repeat};
 
 use advent::input_store;
-use advent_toolbox::spatial::{Coordinate, Space};
-use itertools::Itertools;
+use advent_toolbox::{
+    algo::DijkstraResult,
+    spatial::{coordinates_within, Coordinate, Space},
+};
 
 const YEAR: usize = 2024;
 const DAY: usize = 20;
@@ -17,7 +16,6 @@ enum Cell {
     Open,
     Start,
     End,
-    Cheat,
 }
 
 impl std::fmt::Display for Cell {
@@ -27,7 +25,6 @@ impl std::fmt::Display for Cell {
             Cell::Open => write!(f, "."),
             Cell::Start => write!(f, "S"),
             Cell::End => write!(f, "E"),
-            Cell::Cheat => write!(f, " "),
         }
     }
 }
@@ -44,18 +41,66 @@ impl From<char> for Cell {
     }
 }
 
-fn two_steps(pos: &Coordinate) -> Vec<Coordinate> {
-    pos.cardinals()
+fn n_steps(pos: &Coordinate, n: usize) -> Vec<Coordinate> {
+    let outer = Coordinate::new(n as isize, n as isize);
+    let lower: Coordinate = *pos - outer;
+    let upper: Coordinate = *pos + outer;
+
+    coordinates_within(lower, upper)
         .iter()
-        .flat_map(|c| c.cardinals())
-        .map(|c| c)
-        .collect::<Vec<_>>()
+        .filter(|c| c.distance(pos) <= n)
+        .map(|c| *c)
+        .collect()
+}
+
+fn solve_part(
+    maze: &Space<Coordinate, Cell>,
+    result: &DijkstraResult<Coordinate>,
+    n: usize,
+    savings_by: usize,
+) -> usize {
+    let cheats: HashSet<(Coordinate, Coordinate)> = maze
+        .keys()
+        .map(|c| repeat(*c).zip(n_steps(c, n)))
+        .flatten()
+        .filter(|(a, b)| {
+            a != b
+                && matches!(
+                    maze.get(a),
+                    Some(Cell::Open) | Some(Cell::End) | Some(Cell::Start)
+                )
+                && matches!(
+                    maze.get(b),
+                    Some(Cell::Open) | Some(Cell::End) | Some(Cell::Start)
+                )
+        })
+        .collect();
+
+    let mut out = 0;
+
+    for cheat in cheats {
+        let (a, b) = cheat;
+
+        let a_cost = result.costs.get(&a).unwrap();
+        let b_cost = result.costs.get(&b).unwrap();
+
+        if a_cost > b_cost {
+            continue;
+        }
+
+        let savings = b_cost - a_cost - b.distance(&a);
+        if savings >= savings_by {
+            out += 1;
+        }
+    }
+
+    out
 }
 
 fn main() {
     let input = input_store::get_input(YEAR, DAY);
 
-    //     let input = r#"###############
+    // let input = r#"###############
     // #...#...#.....#
     // #.#.#.#.#.###.#
     // #S#...#.#.#...#
@@ -73,23 +118,6 @@ fn main() {
     // "#;
 
     let maze: Space<Coordinate, Cell> = input.into();
-
-    let cheats: HashSet<(Coordinate, Coordinate)> = maze
-        .keys()
-        .map(|c| repeat(*c).zip(two_steps(c)))
-        .flatten()
-        .filter(|(a, b)| {
-            a != b
-                && matches!(
-                    maze.get(a),
-                    Some(Cell::Open) | Some(Cell::End) | Some(Cell::Start)
-                )
-                && matches!(
-                    maze.get(b),
-                    Some(Cell::Open) | Some(Cell::End) | Some(Cell::Start)
-                )
-        })
-        .collect();
 
     let edges = |pos: &Coordinate| -> Vec<Coordinate> {
         pos.cardinals()
@@ -110,36 +138,13 @@ fn main() {
 
     let result = advent_toolbox::algo::dijkstra(&[start], edges, is_goal, Some(cost));
 
-    let mut part_1 = 0;
-
-    let mut costs: HashMap<usize, usize> = HashMap::new();
-
-    for cheat in cheats {
-        let (a, b) = cheat;
-
-        let a_cost = result.costs.get(&a).unwrap();
-        let b_cost = result.costs.get(&b).unwrap();
-
-        if a_cost > b_cost {
-            continue;
-        }
-
-        let savings = b_cost - a_cost - 2;
-        // println!("({}, {}) -> ({}, {})  = {}", a, a_cost, b, b_cost, savings);
-        costs.entry(savings).and_modify(|c| *c += 1).or_insert(1);
-        if savings >= 100 && true {
-            part_1 += 1;
-        }
-    }
-
-    for key in costs.keys().sorted_by(|a, b| a.cmp(b)) {
-        println!("{} => {}", key, costs[key]);
-    }
-
-    // dbg!(costs);
+    let part_1 = solve_part(&maze, &result, 2, 100);
 
     println!("part_1 => {}", part_1);
-    println!("part_2 => {}", "not done");
+
+    let part_2 = solve_part(&maze, &result, 20, 100);
+
+    println!("part_2 => {}", part_2);
 }
 
 #[cfg(test)]
