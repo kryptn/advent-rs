@@ -29,7 +29,7 @@ fn search<'a>(graph: &UnGraphMap<&'a str, i32>, start: &'a str, k: usize) -> Vec
 fn main() {
     let input = input_store::get_input(YEAR, DAY);
 
-    // let input = "kh-tc\nqp-kh\nde-cg\nka-co\nyn-aq\nqp-ub\ncg-tb\nvc-aq\ntb-ka\nwh-tc\nyn-cg\nkh-ub\nta-co\nde-co\ntc-td\ntb-wq\nwh-td\nta-ka\ntd-qp\naq-cg\nwq-ub\nub-vc\nde-ta\nwq-aq\nwq-vc\nwh-yn\nka-de\nkh-ta\nco-tc\nwh-qp\ntb-vc\ntd-yn";
+    let input = "kh-tc\nqp-kh\nde-cg\nka-co\nyn-aq\nqp-ub\ncg-tb\nvc-aq\ntb-ka\nwh-tc\nyn-cg\nkh-ub\nta-co\nde-co\ntc-td\ntb-wq\nwh-td\nta-ka\ntd-qp\naq-cg\nwq-ub\nub-vc\nde-ta\nwq-aq\nwq-vc\nwh-yn\nka-de\nkh-ta\nco-tc\nwh-qp\ntb-vc\ntd-yn";
 
     let mut edges = vec![];
     let mut computers = HashSet::new();
@@ -52,7 +52,9 @@ fn main() {
     let graph = UnGraphMap::from_edges(edges);
 
     // print dot file
-    // println!("{:?}", petgraph::dot::Dot::new(&graph));
+    println!("{:?}", petgraph::dot::Dot::new(&graph));
+
+
 
     let mut groups = HashSet::new();
 
@@ -60,7 +62,6 @@ fn main() {
         let paths = search(&graph, node, 3);
 
         for path in paths.iter().filter(|p| *p.last().unwrap() == node) {
-
             let group: (&str, &str, &str) = path
                 .iter()
                 .cloned()
@@ -78,6 +79,7 @@ fn main() {
         .count();
 
     println!("part_1 => {}", part_1);
+
     println!("part_2 => {}", "not done");
 }
 

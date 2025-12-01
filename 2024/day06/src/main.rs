@@ -6,7 +6,7 @@ use std::{
 };
 
 use advent::input_store;
-use advent_toolbox::spatial::{Coordinate, Space, DOWN, ORIGIN, UP};
+use advent_toolbox::spatial::{Agent, Coordinate, Space, DOWN, ORIGIN, UP};
 use rayon::prelude::*;
 
 const YEAR: usize = 2024;
@@ -59,55 +59,6 @@ impl std::fmt::Display for Tile {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-struct Agent {
-    position: Coordinate,
-    direction: Coordinate,
-}
-
-impl Agent {
-    fn forward(&self) -> Self {
-        Self {
-            position: self.position + self.direction,
-            direction: self.direction,
-        }
-    }
-
-    fn backward(&self) -> Self {
-        Self {
-            position: self.position - self.direction,
-            direction: self.direction,
-        }
-    }
-
-    fn turn_right(&self) -> Self {
-        Self {
-            position: self.position,
-            direction: self.direction.turn_right(),
-        }
-    }
-
-    fn turn_left(&self) -> Self {
-        Self {
-            position: self.position,
-            direction: self.direction.turn_left(),
-        }
-    }
-
-    fn strafe_left(&self) -> Self {
-        Self {
-            position: self.position + self.direction.turn_left(),
-            direction: self.direction,
-        }
-    }
-
-    fn strafe_right(&self) -> Self {
-        Self {
-            position: self.position + self.direction.turn_right(),
-            direction: self.direction,
-        }
-    }
-}
 
 impl From<char> for Tile {
     fn from(c: char) -> Self {

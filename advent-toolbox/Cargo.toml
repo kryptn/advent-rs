@@ -12,7 +12,7 @@ petgraph = { version = "0.6.5", optional = true }
 
 [features]
 petgraph = ["dep:petgraph"]
-# default = ["petgraph"]
+default = ["petgraph"]
 
 [dev-dependencies]
 rstest = "0.23.0"

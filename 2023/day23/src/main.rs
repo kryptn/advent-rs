@@ -166,7 +166,6 @@ fn build_graph(map: &Space<Coordinate, Square>) -> DiGraph<Coordinate, usize> {
 
 // fn consolidate_graph(graph: &mut DiGraph<Coordinate, usize>) {
 
-
 //     for node in graph.n
 
 // }

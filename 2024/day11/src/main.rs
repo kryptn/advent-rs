@@ -1,4 +1,7 @@
-use std::collections::HashMap;
+use std::{
+    cell::RefCell,
+    collections::{HashMap, HashSet},
+};
 
 use advent::input_store;
 
@@ -59,7 +62,6 @@ impl From<String> for Stones {
             *stones_map.entry(stone).or_insert(0) += 1;
         });
         Self(stones_map)
-
     }
 }
 
@@ -72,7 +74,6 @@ fn main() {
         stones = stones.blink();
         // println!("blinks: {_n}, rocks.len: {}", stones.len());
     }
-    println!("part_1 => {}", stones.len());
 
     for _n in 1..=50 {
         stones = stones.blink();
@@ -104,11 +105,9 @@ mod test {
     #[case(22223, vec![Stone(22223 * 2024)])]
     #[case(222222, vec![Stone(222), Stone(222)])]
     fn p1_tests(#[case] given: u64, #[case] expected: Vec<Stone>) {
-
         let next_stone = Stone(given).next();
         dbg!(&next_stone);
         assert_eq!(next_stone, expected);
-
     }
 
     #[rstest]

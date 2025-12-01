@@ -6,6 +6,9 @@ use advent_toolbox::{
     spatial::{coordinates_within, Coordinate, Space},
 };
 
+#[global_allocator]
+static ALLOCATOR: cap::Cap<std::alloc::System> = cap::Cap::new(std::alloc::System, usize::max_value());
+
 const YEAR: usize = 2024;
 const DAY: usize = 20;
 
@@ -76,6 +79,7 @@ fn solve_part(
         })
         .collect();
 
+
     let mut out = 0;
 
     for cheat in cheats {
@@ -93,6 +97,9 @@ fn solve_part(
             out += 1;
         }
     }
+
+        println!("Currently allocated: {}B", ALLOCATOR.allocated());
+
 
     out
 }
@@ -145,6 +152,8 @@ fn main() {
     let part_2 = solve_part(&maze, &result, 20, 100);
 
     println!("part_2 => {}", part_2);
+
+    println!("Currently allocated: {}B", ALLOCATOR.allocated());
 }
 
 #[cfg(test)]

@@ -2,6 +2,7 @@ pub mod algo;
 pub mod automata;
 pub mod graph;
 pub mod hashers;
+// pub mod new_spatial;
 pub mod parser_helpers;
 pub mod range;
 pub mod rps;

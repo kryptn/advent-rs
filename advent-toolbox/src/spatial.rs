@@ -799,6 +799,7 @@ impl<V> Space<Coordinate, V> {
 
         (left_or_top, right_or_bottom)
     }
+
 }
 
 impl<V> std::fmt::Display for Space<Coordinate, V>
