@@ -24,14 +24,9 @@ fn main() {
 
     let (ranges_input, ids) = input.trim().split_once("\n\n").unwrap();
 
-    let ranges = ranges_input
-        .lines()
-        .map(|line| {
-            let (start_str, end_str) = line.trim().split_once('-').unwrap();
-            let start = start_str.parse().unwrap();
-            let end = end_str.parse().unwrap();
-            (start, end).into()
-        })
+    let ranges = just_numbers(ranges_input)
+        .chunks(2)
+        .map(|chunk| (chunk[0], chunk[1]).into())
         .collect::<Vec<Range>>();
 
     let ids = just_numbers(ids);
