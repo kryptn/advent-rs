@@ -58,6 +58,10 @@ impl Range {
             vec![*self, *other]
         }
     }
+
+    pub fn contains_value(&self, value: isize) -> bool {
+        self.0 <= value && value <= self.1
+    }
 }
 
 impl From<(isize, isize)> for Range {

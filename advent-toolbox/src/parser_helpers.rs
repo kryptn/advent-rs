@@ -13,8 +13,12 @@ where
         .collect();
 
     input
+        // .trim()
         .split_whitespace()
-        .map(|x| x.parse::<N>().unwrap())
+        .map(|x| {
+            // dbg!(&x);
+            x.parse::<N>().unwrap()
+        })
         .collect()
 }
 
