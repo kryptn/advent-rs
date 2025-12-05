@@ -83,8 +83,8 @@ pub struct Ranges(pub Vec<Range>);
 impl Ranges {
     pub fn coalesce(&self) -> Self {
         let mut ranges = self.0.clone();
-        let mut out = vec![ranges[0]];
         ranges.sort();
+        let mut out = vec![ranges[0]];
         for range in ranges.iter() {
             let current = out.last_mut().unwrap();
             if let Some(coalesced) = current.coalesce(range) {

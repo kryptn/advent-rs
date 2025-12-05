@@ -1,5 +1,8 @@
 use advent::input_store;
-use advent_toolbox::{parser_helpers::just_numbers, range::Range};
+use advent_toolbox::{
+    parser_helpers::just_numbers,
+    range::{Range, Ranges},
+};
 
 const YEAR: usize = 2025;
 const DAY: usize = 05;
@@ -7,17 +10,17 @@ const DAY: usize = 05;
 fn main() {
     let input = input_store::get_input(YEAR, DAY);
 
-//     let input = r#"3-5
-// 10-14
-// 16-20
-// 12-18
+    //     let input = r#"3-5
+    // 10-14
+    // 16-20
+    // 12-18
 
-// 1
-// 5
-// 8
-// 11
-// 17
-// 32"#;
+    // 1
+    // 5
+    // 8
+    // 11
+    // 17
+    // 32"#;
 
     let (ranges_input, ids) = input.trim().split_once("\n\n").unwrap();
 
@@ -38,8 +41,11 @@ fn main() {
         .filter(|id| ranges.iter().any(|range| range.contains_value(**id)))
         .count();
 
+    let coalesced = Ranges(ranges).coalesce();
+    let part_2: isize = coalesced.0.iter().map(|r| r.1 - r.0 + 1).sum();
+
     println!("part_1 => {}", part_1);
-    println!("part_2 => {}", "not done");
+    println!("part_2 => {}", part_2);
 }
 
 #[cfg(test)]
