@@ -19,25 +19,8 @@ impl From<char> for Item {
     }
 }
 
-fn main() {
-    let input = input_store::get_input(YEAR, DAY);
-
-//     let input = r#"..@@.@@@@.
-// @@@.@.@.@@
-// @@@@@.@.@@
-// @.@@@@..@.
-// @@.@@@@.@@
-// .@@@@@@@.@
-// .@.@.@.@@@
-// @.@@@.@@@@
-// .@@@@@@@@.
-// @.@.@@@.@.
-// "#;
-
-    let grid: Space<Coordinate, Item> = Space::from_lines(&input);
-
-    let part_1 = grid
-        .iter()
+fn removal_candidates(grid: &Space<Coordinate, Item>) -> Vec<Coordinate> {
+    grid.iter()
         .filter_map(|(key, value)| {
             if matches!(value, Item::Occupied) {
                 Some(key)
@@ -61,10 +44,41 @@ fn main() {
 
             neighbors < 4
         })
-        .count();
+        .cloned()
+        .collect()
+}
 
-    println!("part_1 => {}", part_1);
-    println!("part_2 => {}", "not done");
+fn main() {
+    let input = input_store::get_input(YEAR, DAY);
+
+    //     let input = r#"..@@.@@@@.
+    // @@@.@.@.@@
+    // @@@@@.@.@@
+    // @.@@@@..@.
+    // @@.@@@@.@@
+    // .@@@@@@@.@
+    // .@.@.@.@@@
+    // @.@@@.@@@@
+    // .@@@@@@@@.
+    // @.@.@@@.@.
+    // "#;
+
+    let mut grid: Space<Coordinate, Item> = Space::from_lines(&input);
+
+    let mut removed = vec![];
+    let mut candidates = removal_candidates(&grid);
+    println!("part_1 => {}", candidates.len());
+
+    while !candidates.is_empty() {
+        for candidate in candidates.iter() {
+            grid.insert(*candidate, Item::Empty);
+            removed.push(*candidate);
+        }
+
+        candidates = removal_candidates(&grid);
+    }
+
+    println!("part_2 => {}", removed.len());
 }
 
 #[cfg(test)]
