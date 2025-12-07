@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use advent::input_store;
 use advent_toolbox::spatial::{Coordinate, Direction, Space};
 
@@ -101,9 +103,48 @@ fn main() {
             val
         })
         .count();
-
     println!("part_1 => {}", part_1);
-    println!("part_2 => {}", "not done");
+
+    let source = space
+        .iter()
+        .find(|(_, p)| matches!(p, Platform::Source))
+        .unwrap()
+        .0;
+    let mut beams: HashMap<Coordinate, usize> = HashMap::new();
+    beams.insert(*source, 1);
+
+    loop {
+        let mut new_beams: HashMap<Coordinate, usize> = HashMap::new();
+        for (coord, count) in beams.iter() {
+            let below = coord.up();
+            if let Some(platform) = space.get(&below) {
+                match platform {
+                    Platform::Empty => {
+                        *new_beams.entry(below).or_insert(0) += *count;
+                    }
+                    Platform::Splitter => {
+                        let left = below.left();
+                        let right = below.right();
+                        *new_beams.entry(left).or_insert(0) += *count;
+                        *new_beams.entry(right).or_insert(0) += *count;
+                    }
+                    _ => {
+                        panic!("unexpected platform below beam at {}", coord);
+                    }
+                }
+            }
+        }
+
+        if new_beams.is_empty() {
+            break;
+        }
+
+        beams = new_beams;
+    }
+
+    let part_2 = beams.values().sum::<usize>();
+
+    println!("part_2 => {}", part_2);
 }
 
 #[cfg(test)]
