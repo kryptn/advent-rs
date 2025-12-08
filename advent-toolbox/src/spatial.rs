@@ -451,6 +451,16 @@ impl std::str::FromStr for Coordinate3d {
     }
 }
 
+impl Coordinate3d {
+    pub fn euclidean_distance(&self, other: &Self) -> f64 {
+        let dx = (self.x - other.x) as f64;
+        let dy = (self.y - other.y) as f64;
+        let dz = (self.z - other.z) as f64;
+
+        (dx * dx + dy * dy + dz * dz).sqrt()
+    }
+}
+
 #[rustfmt::skip]
 impl Point for Coordinate3d {
     fn range(&self, other: &Self) -> impl Iterator<Item = Self>
@@ -739,7 +749,6 @@ impl<V> Space<Coordinate, V> {
         out
     }
 
-
     pub fn rows(&self) -> impl Iterator<Item = impl Iterator<Item = (Coordinate, &V)> + Clone> {
         let (lower, upper) = self.bounding_box();
         let mut out = Vec::new();
@@ -799,7 +808,6 @@ impl<V> Space<Coordinate, V> {
 
         (left_or_top, right_or_bottom)
     }
-
 }
 
 impl<V> std::fmt::Display for Space<Coordinate, V>
@@ -1043,11 +1051,7 @@ impl<V> Space<Coordinate3d, V> {
 }
 
 fn sorted<T: PartialEq + PartialOrd>(a: T, b: T) -> (T, T) {
-    if a <= b {
-        (a, b)
-    } else {
-        (b, a)
-    }
+    if a <= b { (a, b) } else { (b, a) }
 }
 
 pub fn coordinates_within(a: Coordinate, b: Coordinate) -> Vec<Coordinate> {
